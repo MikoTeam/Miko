@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<script type="module">
+// 1. Import fungsi yang diperlukan
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import { getFirestore, collection, addDoc } from "firebase/firestore"; // <-- Tambahkan ini
+
+// 2. Konfigurasi
+const firebaseConfig = {
+  apiKey: "AIzaSyB63hKXEZGsIiibm5cxt7NCAsk4VG3Rgs8",
+  authDomain: "mikostrem-app.firebaseapp.com",
+  projectId: "mikostrem-app",
+  storageBucket: "mikostrem-app.firebasestorage.app",
+  messagingSenderId: "899585533522",
+  appId: "1:899585533522:web:085604f2d9f8e2a836218b",
+  measurementId: "G-T9YJM77T3R"
+};
+// 3. Inisialisasi
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db = getFirestore(app); // <-- Inisialisasi database
+// Contoh fungsi untuk menyimpan data ke collection "favorit"
+async function simpanFavorit(namaAnime) {
+  try {
+    const docRef = await addDoc(collection(db, "favorit"), {
+      judul: namaAnime,
+      user: "Miko",
+      timestamp: new Date()
+    });
+    console.log("Anime berhasil disimpan! ID: ", docRef.id);
+  } catch (e) {
+    console.error("Gagal simpan: ", e);
+  }
+}
+// 4. Contoh Fungsi Simpan Data (Buat tes koneksi)
+async function simpanKeDatabase(namaItem) {
+  try {
+    const docRef = await addDoc(collection(db, "favorit"), {
+      nama: namaItem,
+      waktu: new Date().toISOString()
+    });
+    console.log("Data berhasil masuk! ID: ", docRef.id);
+  } catch (e) {
+    console.error("Gagal simpan: ", e);
+  }
+}
+
+// Export agar bisa dipakai di file lain (opsional)
+export { db, simpanKeDatabase };
+
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Sekarang kamu bisa akses 'db' di mana saja
+    window.db = db;
+</script>
+<div id="login-page" class="page" style="display: block; text-align: center; padding-top: 100px;">
+    <h2>Selamat Datang di MikoStrem</h2>
+    <p>Silakan login untuk melanjutkan</p>
+    <button id="google-login-btn" style="padding: 15px 30px; background: #db4437; color: #fff; border: none; border-radius: 5px; cursor: pointer;">
+        Login dengan Google
+    </button>
+</div>
+<div id="modal-hapus" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:99999; justify-content:center; align-items:center;">
+    <div style="background:#1a1a1a; padding:20px; border-radius:15px; width:80%; text-align:center;">
+        <p>Hapus dari Favorit?</p>
+        <button onclick="tutupModal()" style="background:#db4437; color:white; border:none; padding:10px 20px; border-radius:5px; margin:5px;">Hapus</button>
+        <button onclick="tutupModal()" style="background:#333; color:white; border:none; padding:10px 20px; border-radius:5px; margin:5px;">Batal</button>
+    </div>
+</div>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MikoStrem - Lengkap</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding-bottom: 90px; }
+        .page { display: none; padding: 20px; }
+        #home { display: block; }
+        
+        /* Navigasi */
+        .nav-bottom { 
+    position: fixed; 
+    bottom: 0; 
+    left: 0;
+    width: 100%; 
+    display: flex; 
+    justify-content: space-around; 
+    background: #0a0a0a; 
+    padding: 15px 0; 
+    border-top: 1px solid #333; 
+    z-index: 9999; /* Agar selalu di atas elemen lain */
+}
+.nav-btn { 
+    background: none; 
+    border: none; 
+    color: #fff; 
+    font-weight: bold; 
+    cursor: pointer; 
+    padding: 10px;
+    -webkit-tap-highlight-color: transparent; /* Menghilangkan efek biru saat di-klik di HP */
+}
+
+        /* Home & Umum */
+        .brand { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 20px; }
+        .xp-card { background: linear-gradient(135deg, #0a4d33, #000); padding: 20px; border-radius: 16px; margin-bottom: 25px; }
+        .anime-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .poster { width: 100%; aspect-ratio: 2/3; background: #222; border-radius: 12px; margin-bottom: 8px; }
+        
+        /* Jadwal & Favorit */
+        .day-scroll { display: flex; overflow-x: auto; gap: 10px; margin-bottom: 20px; }
+        .day-btn { background: #222; border: 2px solid transparent; color: #fff; padding: 8px 16px; border-radius: 20px; cursor: pointer; }
+        .day-btn.active { border-color: #f39c12; }
+        .item-card { display: flex; gap: 15px; align-items: center; background: #111; padding: 10px; border-radius: 10px; margin-bottom: 10px; }
+        .thumb-small { width: 120px; height: 67px; background: #333; border-radius: 8px; flex-shrink: 0; }
+        .dots-btn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 0 10px; }
+
+        /* Profil */
+        .avatar { width: 100px; height: 100px; background: #444; border-radius: 50%; margin: 20px auto; }
+        .stats-card { display: flex; justify-content: space-between; background: #111; padding: 20px; border-radius: 15px; }
+    </style>
+</head>
+<body>
+
+    <!-- HOME -->
+    <div id="home" class="page">
+        <div class="brand">MikoStrem</div>
+        <div class="xp-card">
+            <h3 style="margin:0 0 10px; color:#f39c12;">👑 TOP GIVEAWAY USERS</h3>
+            <div style="display:flex; justify-content:space-between;"><span>#1 Miko</span><span>0 xp</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>#2 Excynema</span><span>0 xp</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>#3 Faldy</span><span>0 xp</span></div>
+        </div>
+        <h3>Anime Populer</h3>
+        <div class="anime-grid">
+            <div class="anime-item"><div class="poster"></div><div>Jujutsu Kaisen</div></div>
+            <div class="anime-item"><div class="poster"></div><div>Demon Slayer</div></div>
+        </div>
+    </div>
+
+    <!-- JADWAL -->
+    <div id="jadwal" class="page">
+        <h2>Jadwal Rilis</h2>
+        <div class="day-scroll" id="day-container">
+            <button class="day-btn active" onclick="pilihHari(this, 'Senin')">Senin</button>
+            <button class="day-btn" onclick="pilihHari(this, 'Selasa')">Selasa</button>
+            <button class="day-btn" onclick="pilihHari(this, 'Rabu')">Rabu</button>
+            <button class="day-btn" onclick="pilihHari(this, 'Kamis')">Kamis
+            </button>
+            <button class="day-btn" onclick="pilihHari(this, 'Juamat')">Juamat</button>
+            <button class="day-btn" onclick="pilihHari(this, 'Sabtu')">Sabtu</button>
+            <button class="day-btn" onclick="pilihHari(this, 'Minggu')">Minggu </button>
+        </div>
+        <div class="item-card"><div class="thumb-small"></div><div><strong>Jujutsu Kaisen</strong><br><small>20:00 WIB</small></div></div>
+    </div>
+
+    <!-- FAVORIT -->
+    <div id="favorit" class="page">
+        <h2>Favorit</h2>
+        <div class="item-card">
+            <button class="dots-btn">⋮</button>
+            <div class="thumb-small"></div>
+            <div><strong>Demon Slayer</strong><br><small>Ongoing - S4</small></div>
+        </div>
+    </div>
+
+        <div id="profil" class="page">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <span style="font-size: 18px; font-weight: bold;">Profil Saya</span>
+        <button onclick="bukaPengaturan()" style="background:none; border:none; color:#fff; font-size:24px; cursor:pointer;">⚙️</button>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 25px;">
+        <div class="avatar" style="border: 3px solid #f39c12; width: 100px; height: 100px; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 40px;">M</div>
+        <h2 style="margin: 0;">Miko</h2>
+        <div style="color:#2ecc71; font-size: 14px; margin-top: 5px;">● Premium Member</div>
+    </div>
+
+    <div style="background: #111; padding: 20px; border-radius: 15px;">
+        <div style="display: flex; justify-content: space-around; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 20px;">
+            <div style="text-align:center;"><span style="font-size: 18px; font-weight: bold;">24</span><br><small style="color:#888;">Lvl</small></div>
+            <div style="text-align:center;"><span style="font-size: 18px; font-weight: bold;">583</span><br><small style="color:#888;">XP</small></div>
+            <div style="text-align:center;"><span style="font-size: 18px; font-weight: bold;">3</span><br><small style="color:#888;">Hari</small></div>
+        </div>
+        
+        <div style="font-size: 14px; color: #ccc; text-align: center;">
+            <div style="margin-bottom: 5px;">📧 user@mikostrem.com</div>
+            <div style="font-style: italic; color: #777;">"Nih Mbut Cape Gw"</div>
+        </div>
+    </div>
+
+    <div style="margin-top: 20px; background: #111; padding: 15px; border-radius: 15px;">
+        <h4 style="margin: 0 0 10px 0;">Riwayat Aktivitas</h4>
+        <div style="font-size: 13px; color: #aaa; margin-bottom: 5px;">• Menonton Jujutsu Kaisen (1 jam lalu)</div>
+        <div style="font-size: 13px; color: #aaa;">• Login Harian (Hari ke-3)</div>
+    </div>
+</div>
+v>
+
+</nav>
+    </div>
+    
+    <!-- NAVIGASI -->
+    
+<nav class="nav-bottom">
+    <button class="nav-btn active" onclick="pindah('home')">Home</button>
+    <button class="nav-btn" onclick="pindah('jadwal')">Jadwal</button>
+    <button class="nav-btn" onclick="pindah('favorit')">Favorit</button>
+    <button class="nav-btn" onclick="pindah('profil')">Profil</button>
+</nav>
+
+<script>
+  
+    // 1. Fungsi Login (Menangani tombol login Google)
+    document.getElementById('google-login-btn').addEventListener('click', function() {
+        alert("Login dengan Google Berhasil!");
+        localStorage.setItem("statusLogin", "berhasil"); // Simpan status
+        
+        // Sembunyikan halaman login, tampilkan home
+        document.getElementById('login-page').style.display = 'none';
+        document.getElementById('home').style.display = 'block';
+        
+        // Beri tanda aktif ke tombol home karena kita masuk ke home
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector('[onclick="pindah(\'home\')"]').classList.add('active');
+    });
+
+    // 2. Fungsi Pindah Halaman & Navigasi (Proteksi Login + Efek Aktif)
+    function pindah(id) {
+        const isLogin = localStorage.getItem("statusLogin");
+        
+        if (isLogin === "berhasil") {
+            // Sembunyikan login & semua halaman
+            document.getElementById('login-page').style.display = 'none';
+            document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+            
+            // Tampilkan halaman tujuan
+            document.getElementById(id).style.display = 'block';
+            
+            // Beri efek penanda (active) pada tombol yang disentuh
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        } else {
+            // Jika belum login, paksa ke halaman login
+            alert("Harap Login dengan Google terlebih dahulu!");
+            document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+            document.getElementById('login-page').style.display = 'block';
+        }
+    }
+
+    // 3. Fungsi pilih hari
+    function pilihHari(btn, hari) {
+        document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        console.log("Jadwal: " + hari);
+    }
+    // ... fungsi lain yang sudah ada ...
+
+    // Tambahkan fungsi ini
+    function bukaPengaturan() {
+        // Kamu bisa ganti alert dengan perintah untuk membuka modal/halaman baru
+        alert("Fitur Pengaturan Profil akan segera hadir!");
+        console.log("Tombol pengaturan ditekan");
+    }
+
+    // ... sisa script ...
+</script>
+</body>
+</html>
+
+-Dibuat Oleh Miko-
