@@ -1,6 +1,21 @@
 import { auth, provider, db } from "./firebase-config.js";
-import { signInWithPopup } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+// --- DETEKTIF LOGIN (BARU: Menjaga sesi agar tidak hilang saat refresh) ---
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        // Jika user terdeteksi login, langsung buka aplikasi
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        tampilkanProfil(user);
+        muatAnime();
+    } else {
+        // Jika tidak ada user, tampilkan layar login
+        document.getElementById('loginScreen').style.display = 'block';
+        document.getElementById('mainApp').style.display = 'none';
+    }
+});
 
 let semuaAnime = [];
 
@@ -15,10 +30,7 @@ window.loginGoogle = async () => {
         if (!userSnap.exists()) {
             await setDoc(userRef, { nama: user.displayName, email: user.email, photo: user.photoURL, xp: 0, level: 1 });
         }
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('mainApp').style.display = 'block';
-        tampilkanProfil(user);
-        muatAnime();
+        // Catatan: Setelah login berhasil, onAuthStateChanged di atas akan otomatis mengurus perpindahan layar
     } catch (e) { 
         console.error("Login Error:", e);
         alert("Login Gagal: " + e.message); 
@@ -82,16 +94,11 @@ window.muatAnime = async function() {
     } catch (e) { console.error(e); }
 };
 
-// --- PERBAIKAN BUG DI SINI ---
 function renderGrid(dataList, isSearch = false) {
     const grid = document.querySelector(".anime-grid");
     if (!grid) return;
     grid.innerHTML = "";
-    
-    // Logika pembatasan hasil: ambil 10 jika bukan pencarian
     const dataToDisplay = isSearch ? dataList : dataList.slice(0, 10);
-    
-    // Menggunakan dataToDisplay agar filter/pembatasan bekerja
     dataToDisplay.forEach(data => {
         const epsLinksStr = encodeURIComponent(JSON.stringify(data.epsLinks || {}));
         grid.innerHTML += `
@@ -209,3 +216,4 @@ window.pilihHari = async (btn, hari) => {
 };
 
 window.tutupVideo = () => { document.getElementById('videoPlayer').pause(); document.getElementById('videoModal').style.display = 'none'; };
+        
