@@ -1,20 +1,6 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSy...", 
-  authDomain: "mikostrem-app.firebaseapp.com",
-  projectId: "mikostrem-app",
-  storageBucket: "mikostrem-app.appspot.com",
-  messagingSenderId: "...",
-  appId: "..."
-};
-
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const provider = new GoogleAuthProvider();
-export const db = getFirestore(app);
+import { auth, provider, db } from "./firebase-config.js";
+import { signInWithPopup } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { collection, getDocs, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
 let semuaAnime = [];
 
@@ -35,12 +21,7 @@ window.loginGoogle = async () => {
         muatAnime();
     } catch (e) { 
         console.error("Login Error:", e);
-        // Error handling agar kamu tahu kalau domain belum terdaftar
-        if (e.code === 'auth/unauthorized-domain') {
-            alert("Login Gagal: Domain belum terdaftar di Firebase Authorized Domains.");
-        } else {
-            alert("Login Gagal: " + e.message); 
-        }
+        alert("Login Gagal: " + e.message); 
     }
 };
 
@@ -98,10 +79,7 @@ window.muatAnime = async function() {
         semuaAnime = [];
         querySnapshot.forEach((doc) => semuaAnime.push({ id: doc.id, ...doc.data() }));
         renderGrid(semuaAnime);
-    } catch (e) { 
-        console.error("Error Muat Anime:", e);
-        grid.innerHTML = `<p style="text-align:center;">Gagal memuat anime. Cek koneksi.</p>`;
-    }
+    } catch (e) { console.error(e); }
 };
 
 function renderGrid(dataList, isSearch = false) {
@@ -109,7 +87,7 @@ function renderGrid(dataList, isSearch = false) {
     if (!grid) return;
     grid.innerHTML = "";
     const dataToDisplay = isSearch ? dataList : dataList.slice(0, 10);
-    dataToDisplay.forEach(data => {
+    dataList.forEach(data => {
         const epsLinksStr = encodeURIComponent(JSON.stringify(data.epsLinks || {}));
         grid.innerHTML += `
             <div class="anime-item">
@@ -226,3 +204,4 @@ window.pilihHari = async (btn, hari) => {
 };
 
 window.tutupVideo = () => { document.getElementById('videoPlayer').pause(); document.getElementById('videoModal').style.display = 'none'; };
+                      
