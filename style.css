@@ -75,3 +75,12 @@ body {
 /* (Gunakan seluruh isi CSS yang kamu kirim di pesan sebelumnya, tambahkan ini di bawahnya) */
 .xp-user-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #222; }
 .avatar-large { width: 100px; height: 100px; background: #f39c12; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: bold; }
+
+/* (Semua CSS lama kamu tetap di sini, tambahkan ini di bagian paling bawah) */
+
+/* Perbaikan Modal Agar Deskripsi/Genre Rapi */
+#videoModal { position: fixed; top:0; left:0; width:100%; height:100%; background:#0b0e14; z-index:9999; overflow-y:auto; display:none; }
+#videoInfo { padding: 20px; color: #fff; }
+.genre-tag { display: inline-block; background: #2c3e50; color: #f39c12; padding: 3px 8px; border-radius: 5px; font-size: 11px; margin-right: 5px; }
+.eps-scroll-container { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; }
+.eps-btn { background: #1a1f29; color: white; border: 1px solid #444; padding: 10px 15px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
