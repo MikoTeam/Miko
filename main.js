@@ -1,6 +1,20 @@
-import { auth, provider, db } from "./firebase-config.js";
-import { signInWithPopup } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-import { collection, getDocs, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSy...", 
+  authDomain: "mikostrem-app.firebaseapp.com",
+  projectId: "mikostrem-app",
+  storageBucket: "mikostrem-app.appspot.com",
+  messagingSenderId: "...",
+  appId: "..."
+};
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const provider = new GoogleAuthProvider();
+export const db = getFirestore(app);
 
 let semuaAnime = [];
 
@@ -19,51 +33,63 @@ window.loginGoogle = async () => {
         document.getElementById('mainApp').style.display = 'block';
         tampilkanProfil(user);
         muatAnime();
-    } catch (e) { alert("Login Gagal: " + e.message); }
+    } catch (e) { 
+        console.error("Login Error:", e);
+        // Error handling agar kamu tahu kalau domain belum terdaftar
+        if (e.code === 'auth/unauthorized-domain') {
+            alert("Login Gagal: Domain belum terdaftar di Firebase Authorized Domains.");
+        } else {
+            alert("Login Gagal: " + e.message); 
+        }
+    }
 };
 
 // --- FUNGSI PROFIL & XP ---
 async function tampilkanProfil(user) {
-    const docSnap = await getDoc(doc(db, "users", user.uid));
-    const data = docSnap.data();
-    document.getElementById('profileContent').innerHTML = `
-        <img src="${data.photo}" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; margin-bottom:10px;">
-        <h3>${data.nama}</h3>
-        <p class="role" style="color:#f39c12;">● Premium Member</p>
-        <div style="margin-top:20px; text-align:left; border-top:1px solid #333; padding-top:15px;">
-            <p>📧 ${data.email}</p>
-            <div style="display:flex; justify-content:space-between; margin-top:15px;">
-                <span>Level: ${data.level}</span>
-                <span>XP: ${data.xp}</span>
+    try {
+        const docSnap = await getDoc(doc(db, "users", user.uid));
+        if (!docSnap.exists()) return;
+        const data = docSnap.data();
+        document.getElementById('profileContent').innerHTML = `
+            <img src="${data.photo}" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; margin-bottom:10px;">
+            <h3>${data.nama}</h3>
+            <p class="role" style="color:#f39c12;">● Premium Member</p>
+            <div style="margin-top:20px; text-align:left; border-top:1px solid #333; padding-top:15px;">
+                <p>📧 ${data.email}</p>
+                <div style="display:flex; justify-content:space-between; margin-top:15px;">
+                    <span>Level: ${data.level}</span>
+                    <span>XP: ${data.xp}</span>
+                </div>
             </div>
-        </div>
-    `;
+        `;
+    } catch (e) { console.error("Error Profil:", e); }
 }
 
-// Fungsi Tambah XP & Level Up (Rumus: Setiap 500 XP naik level)
 window.tambahXp = async () => {
     const user = auth.currentUser;
     if (!user) return;
-    const userRef = doc(db, "users", user.uid);
-    const docSnap = await getDoc(userRef);
-    if (docSnap.exists()) {
-        const data = docSnap.data();
-        const newXp = data.xp + 20;
-        const newLevel = Math.floor(newXp / 500) + 1;
-        await updateDoc(userRef, { xp: newXp, level: newLevel });
-        tampilkanProfil(user); // Update tampilan profil otomatis
-    }
+    try {
+        const userRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const newXp = data.xp + 20;
+            const newLevel = Math.floor(newXp / 500) + 1;
+            await updateDoc(userRef, { xp: newXp, level: newLevel });
+            tampilkanProfil(user);
+        }
+    } catch (e) { console.error("Error XP:", e); }
 };
 
 // --- FUNGSI VIDEO ---
 window.gantiVideo = (url) => { 
-    document.getElementById('videoPlayer').src = url; 
-    document.getElementById('videoPlayer').play(); 
-    tambahXp(); // Panggil fungsi XP saat ganti episode
+    const player = document.getElementById('videoPlayer');
+    player.src = url; 
+    player.play(); 
+    window.tambahXp();
 };
 
-// --- [Kode lainnya tetap sama seperti sebelumnya] ---
-
+// --- FUNGSI ANIME ---
 window.muatAnime = async function() {
     const grid = document.querySelector(".anime-grid");
     if (!grid) return;
@@ -72,7 +98,10 @@ window.muatAnime = async function() {
         semuaAnime = [];
         querySnapshot.forEach((doc) => semuaAnime.push({ id: doc.id, ...doc.data() }));
         renderGrid(semuaAnime);
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error("Error Muat Anime:", e);
+        grid.innerHTML = `<p style="text-align:center;">Gagal memuat anime. Cek koneksi.</p>`;
+    }
 };
 
 function renderGrid(dataList, isSearch = false) {
@@ -106,7 +135,7 @@ window.bukaVideo = (judul, deskripsi, epsLinksStr, genre, posterUrl) => {
         const keys = Object.keys(epsLinks).sort();
         player.src = epsLinks[keys[0]];
         player.load();
-        tambahXp(); // Tambah XP saat buka video
+        window.tambahXp();
         let episodeList = keys.map(k => `<button class="eps-btn" onclick="gantiVideo('${epsLinks[k]}')">Ep ${k}</button>`).join('');
         const genreTags = genre ? genre.split(',').map(g => `<span class="genre-tag">${g.trim()}</span>`).join('') : '';
         info.innerHTML = `
@@ -122,6 +151,7 @@ window.bukaVideo = (judul, deskripsi, epsLinksStr, genre, posterUrl) => {
     }
 };
 
+// --- FUNGSI FAVORIT ---
 window.tambahFavorit = (judul, posterUrl, deskripsi, epsLinksStr, genre) => {
     let favs = JSON.parse(localStorage.getItem('favoritMiko') || '[]');
     if (!favs.find(a => a.judul === judul)) {
@@ -135,11 +165,12 @@ window.hapusFavorit = (judul) => {
     let favs = JSON.parse(localStorage.getItem('favoritMiko') || '[]');
     favs = favs.filter(a => a.judul !== judul);
     localStorage.setItem('favoritMiko', JSON.stringify(favs));
-    muatFavorit();
+    window.muatFavorit();
 };
 
 window.muatFavorit = () => {
     const grid = document.getElementById('favorit-grid');
+    if (!grid) return;
     const favs = JSON.parse(localStorage.getItem('favoritMiko') || '[]');
     grid.innerHTML = "";
     favs.forEach(data => {
@@ -154,6 +185,7 @@ window.muatFavorit = () => {
     });
 };
 
+// --- NAVIGASI ---
 window.pindah = (id) => {
     document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
     document.getElementById(id).style.display = 'block';
@@ -161,7 +193,7 @@ window.pindah = (id) => {
         btn.classList.remove('active');
         if (btn.getAttribute('onclick').includes(id)) btn.classList.add('active');
     });
-    if(id === 'favorit') muatFavorit();
+    if(id === 'favorit') window.muatFavorit();
 };
 
 window.pilihHari = async (btn, hari) => {
@@ -190,8 +222,7 @@ window.pilihHari = async (btn, hari) => {
             }
             content.innerHTML = html;
         } else { content.innerHTML = `<p style="text-align:center;">Belum ada jadwal.</p>`; }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Error Jadwal:", e); }
 };
 
 window.tutupVideo = () => { document.getElementById('videoPlayer').pause(); document.getElementById('videoModal').style.display = 'none'; };
-                
