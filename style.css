@@ -72,3 +72,6 @@ body {
 .profile-card-center { background: #151921; padding: 30px; margin: 20px; border-radius: 20px; text-align: center; border: 1px solid #2c3e50; }
 .eps-btn { background: #1a1f29; color: white; border: 1px solid #333; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-right: 10px; }
           
+/* (Gunakan seluruh isi CSS yang kamu kirim di pesan sebelumnya, tambahkan ini di bawahnya) */
+.xp-user-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #222; }
+.avatar-large { width: 100px; height: 100px; background: #f39c12; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: bold; }
