@@ -1,86 +1,750 @@
-/* --- Reset & Base --- */
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { 
-    background-color: #0b0e14; 
-    color: #ffffff; 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    padding-bottom: 80px; 
+/* ==========================================================================
+   1. RESET & VARIABEL UTAMA (TEMA DARK EMAS)
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* --- Halaman Konten --- */
-.page { display: none; padding: 20px; animation: fadeIn 0.3s; }
+body {
+    background-color: #0b0c10;
+    color: #ffffff;
+    min-height: 100vh;
+    padding-bottom: 80px; /* Jarak aman di bawah agar konten tidak tertutup navbar */
+    overflow-x: hidden;
+}
+
+/* ==========================================================================
+   2. KONTROLLER SISTEM HALAMAN (PAGES CONTROL - ANTI NUMPUK) 🛠️
+   ========================================================================== */
+.page {
+    display: none; /* KUNCI: Sembunyikan semua halaman secara default */
+    padding: 0 15px;
+    animation: fadeIn 0.25s ease-in-out;
+}
+
+/* KUNCI: Pastikan saat pertama kali dibuka, hanya halaman Home yang muncul */
+#home {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   3. HEADER & BRANDING LAYOUT
+   ========================================================================== */
+header {
+    display: flex;
+    align-items: center;
+    padding: 18px 15px 10px 15px;
+    background: #0b0c10;
+}
+
+.logo-box {
+    background-color: #f39c12;
+    color: #000;
+    font-weight: 900;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 18px;
+    margin-right: 10px;
+    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+}
+
+header h1 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+header h1 span {
+    color: #f39c12;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #f39c12;
+    text-transform: uppercase;
+    margin: 20px 0 12px 0;
+    letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   4. KOMPONEN SEARCH BAR
+   ========================================================================== */
+.search-container {
+    margin: 15px 0;
+}
+
+.search-container input {
+    width: 100%;
+    padding: 12px 15px;
+    background-color: #1f2833;
+    border: 1px solid rgba(69, 243, 255, 0.2);
+    border-radius: 25px;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.search-container input:focus {
+    border-color: #f39c12;
+    box-shadow: 0 0 8px rgba(243, 156, 18, 0.2);
+}
+
+/* ==========================================================================
+   5. KOMPONEN LEADERBOARD USER XP
+   ========================================================================== */
+.leaderboard-card {
+    background: rgba(31, 40, 51, 0.2);
+    border: 1px solid rgba(243, 156, 18, 0.2);
+    border-radius: 14px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.leaderboard-title {
+    color: #f39c12;
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.rank-item {
+    display: flex;
+    align-items: center;
+    background: #f39c12;
+    color: #000;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-weight: bold;
+    font-size: 13px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.rank-item:nth-child(2) { background: rgba(243, 156, 18, 0.85); }
+.rank-item:nth-child(3) { background: rgba(243, 156, 18, 0.7); }
+
+.rank-num {
+    margin-right: 15px;
+    font-weight: 900;
+}
+
+.user-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-xp {
+    font-weight: 800;
+}
+
+/* ==========================================================================
+   6. ANIME GRID 3 KOLOM RASIO 9:16 (PAS DI HP) 🚀
+   ========================================================================== */
+.anime-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* Kunci 3 kolom sejajar */
+    gap: 8px;
+    padding-bottom: 20px;
+}
+
+.anime-item {
+    background: #12141c;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.anime-item:active {
+    transform: scale(0.96);
+}
+
+.anime-item .poster {
+    width: 100%;
+    aspect-ratio: 9 / 16; /* Kunci rasio ramping tegak */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+    border-radius: 8px;
+    background-color: #1f2833;
+}
+
+.overlay-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.85) 60%);
+    padding: 6px 4px 4px 4px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.anime-title {
+    margin: 5px 3px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #ffffff;
+    text-align: left;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Potong maksimal 2 baris teks */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.25;
+    height: 28px; /* Mengunci tinggi wadah agar grid tetap rata */
+}
+
+/* ==========================================================================
+   7. BUBBLE KALENDER MINGGUAN (TAB JADWAL)
+   ========================================================================== */
+.calendar-header-title {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 800;
+    margin: 20px 0;
+    color: #fff;
+}
+
+.day-tabs-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #11141a;
+    padding: 12px 8px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.day-tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    flex: 1;
+}
+
+.day-bubble {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: bold;
+    color: #a0a5b5;
+    transition: all 0.2s ease;
+    background: transparent;
+}
+
+.day-bubble.active {
+    background-color: #3498db; /* Warna gelembung biru aktif pilihanmu */
+    color: #ffffff !important;
+    box-shadow: 0 3px 8px rgba(52, 152, 219, 0.4);
+}
+
+.day-sub {
+    font-size: 11px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-top: 6px;
+}
+
+/* ==========================================================================
+   8. LIST LAYOUT CARD (TAB JADWAL)
+   ========================================================================== */
+.schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.schedule-card {
+    display: flex;
+    background: #12141c;
+    border-radius: 10px;
+    overflow: hidden;
+    padding: 8px;
+    border: 1px solid #1f2833;
+    cursor: pointer;
+}
+
+.schedule-poster {
+    width: 75px;
+    height: 100px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 6px;
+    background-color: #1f2833;
+    flex-shrink: 0;
+}
+
+.schedule-details {
+    flex: 1;
+    padding-left: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.schedule-details h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.sched-eps {
+    font-size: 11px;
+    color: #3498db;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.sched-views {
+    font-size: 11px;
+    color: #aaa;
+    margin-bottom: 4px;
+}
+
+.sched-time-status {
+    font-size: 11px;
+    color: #f39c12;
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   9. FIXED BOTTOM NAVBAR (NAVBAR BAWAH DIKUNCI MATI) 🔒
+   ========================================================================== */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: #11141a;
+    border-top: 1px solid #1f2833;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 1000; /* Mengunci agar navbar selalu berada di lapisan paling atas */
+}
+
+.nav-btn {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 25%;
+    height: 100%;
+    transition: color 0.2s ease;
+}
+
+.nav-btn.active {
+    color: #f39c12; /* Warna tombol aktif emas */
+}
+
+/* ==========================================================================
+   10. MODAL POPUP VIDEO PLAYER CONTROLLER (RENGGANG & ELEGAN) 🎬
+   ========================================================================== */
+.modal {
+    display: none; 
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(6px);
+}
+
+.modal-content {
+    background-color: #0b0c10;
+    margin: 5% auto;
+    padding: 22px;
+    border: 1px solid rgba(243, 156, 18, 0.25);
+    width: 92%;
+    max-width: 500px;
+    border-radius: 16px;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Wadah Video Player & Tombol Kontrol */
+.video-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 20px; /* Jarak bawah video lega */
+}
+
+.video-wrapper video {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    background: #000;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+/* Tombol Ubah Ukuran / Rotasi ala YouTube 🔄 */
+.fullscreen-btn {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #f39c12;
+    border: 1px solid #f39c12;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.fullscreen-btn:active {
+    background: #f39c12;
+    color: #000;
+}
+
+/* Elemen Teks Informasi Di Dalam Modal */
+.modal-anime-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    margin-top: 5px;
+    margin-bottom: 6px;
+}
+
+.modal-anime-genre {
+    color: #f39c12;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 15px;
+}
+
+/* Garis Pemisah Elegan (Divider) 🛠 */
+.modal-divider {
+    height: 1px;
+    background: linear-gradient(to right, rgba(243, 156, 18, 0.4), transparent);
+    margin: 15px 0;
+    border: none;
+}
+
+.modal-anime-desc {
+    color: #ccc;
+    font-size: 12.5px;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    text-align: justify;
+    max-height: 100px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.modal-eps-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #f39c12;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+}
+
+/* Barisan Tombol Episode */
+#eps-list-container {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.eps-btn {
+    padding: 8px 14px;
+    background: #1f2833;
+    color: #fff;
+    border: 1px solid rgba(243, 156, 18, 0.2);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.eps-btn:active {
+    background: #f39c12 !important;
+    color: #000 !important;
+    border-color: #f39c12;
+}
+
+.close-btn {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 100;
+}
+
+/* ==========================================================================
+   11. SISTEM KOMENTAR & REPLY (ALA YOUTUBE) 💬
+   ========================================================================== */
+.comments-section {
+    margin-top: 25px;
+    background: #12141c;
+    border: 1px solid #1f2833;
+    border-radius: 12px;
+    padding: 15px;
+}
+
+.comments-count {
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 15px;
+    color: #fff;
+}
+
+/* Form Input Utama */
+.comment-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.comment-input {
+    flex: 1;
+    background: #1f2833;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 10px 14px;
+    border-radius: 20px;
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+}
+
+.comment-input:focus {
+    border-color: #f39c12;
+}
+
+.comment-submit-btn {
+    background: none;
+    border: none;
+    color: #f39c12;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+/* Item Komentar */
+.comment-item {
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 10px;
+}
+
+.comment-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.comment-user {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #fff;
+}
+
+.comment-text {
+    font-size: 13px;
+    color: #ccc;
+    line-height: 1.4;
+    margin-left: 2px;
+}
+
+.comment-actions {
+    margin-top: 6px;
+}
+
+.reply-btn {
+    background: none;
+    border: none;
+    color: #3498db;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 2px 5px;
+}
+
+/* Box khusus untuk balasan (Menjorok ke dalam ala nested reply) */
+.replies-container {
+    margin-left: 25px;
+    border-left: 2px solid #1f2833;
+    padding-left: 10px;
+    margin-top: 10px;
+}
+
+/* Form input balasan yang muncul dinamis */
+.reply-form-box {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    margin-left: 25px;
+}
+
+/* (Semua kode CSS dari pesan sebelumnya tetap sama, tambahkan ini di paling bawah) */
+.page#profil { max-width: 500px; margin: 0 auto; }
+.modal-content { margin-top: 10vh !important; }
+
+/* ==========================================================================
+   12. STYLING TAMBAHAN UNTUK ICON PROFIL (SESUAI REQUEST)
+   ========================================================================== */
+
+/* Kontainer pembungkus ikon di halaman profil */
+.profile-header-container {
+    display: flex;
+    justify-content: space-between; /* Notif ke kiri, Kanan ke kanan */
+    align-items: flex-start;        /* Posisi atas */
+    padding: 20px 20px 0 20px;      /* Jarak dari atas dan pinggir */
+    width: 100%;
+}
+
+/* Mengatur ikon kanan agar menumpuk vertikal (Pengaturan atas, Chat bawah) */
+.profile-right-icons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Jarak antara ikon Pengaturan dan Chat */
+}
+
+/* Ukuran standar ikon */
+.icon-notif, .icon-setting, .icon-chat {
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+    filter: brightness(0.9); /* Sedikit gelap agar sesuai tema dark */
+    transition: transform 0.2s ease;
+}
+
+/* Efek hover agar ikon merespon saat disentuh */
+.icon-notif:hover, .icon-setting:hover, .icon-chat:hover {
+    transform: scale(1.1);
+    filter: brightness(1.2);
+}
+/* ==========================================================================
+   1. RESET & VARIABEL UTAMA (TEMA DARK EMAS)
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background-color: #0b0c10;
+    color: #ffffff;
+    min-height: 100vh;
+    padding-bottom: 80px;
+    overflow-x: hidden;
+}
+
+/* ==========================================================================
+   2. KONTROLLER SISTEM HALAMAN (PAGES CONTROL) 🛠️
+   ========================================================================== */
+.page { display: none; padding: 0 15px; animation: fadeIn 0.25s ease-in-out; }
 #home { display: block; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-/* --- Header Premium & Search (DIPERBAIKI) --- */
-.header-premium { padding: 20px 20px 10px 20px; background: #0b0e14; }
+/* ==========================================================================
+   3. HEADER & BRANDING LAYOUT
+   ========================================================================== */
+header { display: flex; align-items: center; padding: 18px 15px 10px 15px; background: #0b0c10; }
+.logo-box { background-color: #f39c12; color: #000; font-weight: 900; padding: 6px 12px; border-radius: 8px; font-size: 18px; margin-right: 10px; box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3); }
+header h1 { font-size: 20px; font-weight: 800; color: #ffffff; }
+header h1 span { color: #f39c12; }
+.section-title { font-size: 16px; font-weight: 800; color: #f39c12; text-transform: uppercase; margin: 20px 0 12px 0; letter-spacing: 0.5px; }
 
-.brand-container { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
-.brand-icon { width: 35px; height: 35px; border-radius: 8px; background: #f39c12; display: flex; align-items: center; justify-content: center; font-weight: bold; color: black; }
-.brand-title { font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; }
-.brand-title::first-letter { color: #f39c12; }
+/* ==========================================================================
+   4. KOMPONEN SEARCH BAR
+   ========================================================================== */
+.search-container { margin: 15px 0; }
+.search-container input { width: 100%; padding: 12px 15px; background-color: #1f2833; border: 1px solid rgba(69, 243, 255, 0.2); border-radius: 25px; color: #fff; font-size: 14px; outline: none; text-align: center; transition: all 0.3s ease; }
+.search-container input:focus { border-color: #f39c12; box-shadow: 0 0 8px rgba(243, 156, 18, 0.2); }
 
-#searchInput {
-    width: 100%; padding: 14px 20px; background: #151921; 
-    border: 1px solid #2c3e50; border-radius: 12px; color: white;
-    font-size: 14px; outline: none; transition: 0.3s;
-}
-#searchInput:focus { border-color: #f39c12; }
+/* ==========================================================================
+   5. KOMPONEN LEADERBOARD USER XP
+   ========================================================================== */
+.leaderboard-card { background: rgba(31, 40, 51, 0.2); border: 1px solid rgba(243, 156, 18, 0.2); border-radius: 14px; padding: 15px; margin-bottom: 10px; }
+.leaderboard-title { color: #f39c12; font-size: 13px; font-weight: 800; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.rank-item { display: flex; align-items: center; background: #f39c12; color: #000; padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; font-weight: bold; font-size: 13px; }
+.rank-num { margin-right: 15px; font-weight: 900; }
+.user-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-xp { font-weight: 800; }
 
-.section-title { padding: 20px 20px 5px 20px; font-size: 18px; font-weight: 600; color: #fff; }
+/* ==========================================================================
+   6. ANIME GRID 3 KOLOM RASIO 9:16
+   ========================================================================== */
+.anime-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding-bottom: 20px; }
+.anime-item { background: #12141c; border-radius: 8px; overflow: hidden; cursor: pointer; transition: 0.2s; }
+.anime-item:active { transform: scale(0.96); }
+.anime-item .poster { width: 100%; aspect-ratio: 9 / 16; background-size: cover; background-position: center; position: relative; border-radius: 8px; }
+.overlay-info { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.85)); padding: 6px 4px; display: flex; justify-content: space-between; font-size: 9px; }
+.anime-title { margin: 5px 3px; font-size: 11px; font-weight: 700; color: #fff; height: 28px; overflow: hidden; }
 
-/* --- Kartu XP (DIPERBAIKI) --- */
-.xp-card { 
-    background: #151921; 
-    border-radius: 12px; padding: 20px; 
-    border: 1px solid #222;
-    margin: 20px; 
-}
-.xp-card h3 { font-size: 14px; color: #f39c12; margin-bottom: 10px; }
-.xp-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
-
-/* --- Grid Anime --- */
-.anime-grid { 
-    display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 15px 20px; 
-}
-.anime-item { 
-    background: #151921; border-radius: 12px; padding: 8px; border: 1px solid #222; 
-}
-.poster { 
-    width: 100%; aspect-ratio: 2/3; background: #2c3e50; 
-    border-radius: 8px; cursor: pointer; background-size: cover; background-position: center; 
-}
-.anime-item p {
-    text-align: center; font-size: 12px; margin-top: 8px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* Judul tidak akan merusak layout */
-}
-
-/* --- Navigasi Bawah --- */
-.nav-bottom { 
-    position: fixed; bottom: 0; left: 0; width: 100%; 
-    display: flex; justify-content: space-around; 
-    background: #151921; padding: 15px 0; 
-    border-top: 1px solid #222; z-index: 1000; 
-}
-.nav-btn { background: none; border: none; color: #777; font-size: 12px; cursor: pointer; }
-.nav-btn.active { color: #f39c12 !important; font-weight: bold; }
-
-/* --- Lain-lain --- */
-.day-scroll { display: flex; gap: 10px; margin: 20px; overflow-x: auto; padding-bottom: 5px; }
-.day-btn { background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
-.day-btn.active { background: #f39c12; border: none; }
-.profile-card-center { background: #151921; padding: 30px; margin: 20px; border-radius: 20px; text-align: center; border: 1px solid #2c3e50; }
-.eps-btn { background: #1a1f29; color: white; border: 1px solid #333; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-right: 10px; }
-          
-/* (Gunakan seluruh isi CSS yang kamu kirim di pesan sebelumnya, tambahkan ini di bawahnya) */
-.xp-user-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #222; }
-.avatar-large { width: 100px; height: 100px; background: #f39c12; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: bold; }
-
-/* (Semua CSS lama kamu tetap di sini, tambahkan ini di bagian paling bawah) */
-
-/* Perbaikan Modal Agar Deskripsi/Genre Rapi */
-#videoModal { position: fixed; top:0; left:0; width:100%; height:100%; background:#0b0e14; z-index:9999; overflow-y:auto; display:none; }
-#videoInfo { padding: 20px; color: #fff; }
-.genre-tag { display: inline-block; background: #2c3e50; color: #f39c12; padding: 3px 8px; border-radius: 5px; font-size: 11px; margin-right: 5px; }
-.eps-scroll-container { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; }
-.eps-btn { background: #1a1f29; color: white; border: 1px solid #444; padding: 10px 15px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+/* ==========================================================================
+   7. JADWAL TAB (KALENDER & LIST)
+   ========================================================================== */
+.day-tab-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; flex: 1; }
+.day-bubble { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 11px; font-weight: bold; color: #a0a5b5; }
+.day-bubble.active { background-color: #3498db; color: #ffffff !important; }
+.schedule-card { display: flex; background: #12141c; border-radius: 10px; padding: 8px; margin-bottom: 10px; border: 1px solid #1f2833; cursor: 
