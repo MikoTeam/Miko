@@ -1,222 +1,318 @@
-import { auth, provider, db } from "./firebase-config.js";
-import { signInWithPopup } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-import { collection, getDocs, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { db } from "./firebase-config.js";
+import { collection, getDocs, doc, getDoc, query, orderBy, limit, addDoc, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
-let semuaAnime = [];
+// Cache data lokal agar tidak boros kuota query Firestore
+let listSemuaAnime = [];
+let hariAktif = "Senin"; 
+const auth = getAuth();
 
-// --- FUNGSI LOGIN ---
-window.loginGoogle = async () => {
-    try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
+// Urutan nama hari untuk komponen kalender mingguan
+const daftarNamaHari = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
 
-        if (!userSnap.exists()) {
-            await setDoc(userRef, { nama: user.displayName, email: user.email, photo: user.photoURL, xp: 0, level: 1 });
-        }
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('mainApp').style.display = 'block';
-        tampilkanProfil(user);
-        muatAnime();
-    } catch (e) { 
-        console.error("Login Error:", e);
-        alert("Login Gagal: " + e.message); 
+// ==========================================
+// 1. SISTEM NAVIGATION UTAMA (TABS)
+// ==========================================
+window.navigasiKe = function(idHalaman, elemenTombol) {
+    document.querySelectorAll('.page').forEach(halaman => {
+        halaman.style.display = 'none';
+    });
+    
+    const halamanTujuan = document.getElementById(idHalaman);
+    if (halamanTujuan) {
+        halamanTujuan.style.display = 'block';
+    }
+    
+    document.querySelectorAll('.nav-btn').forEach(tombol => {
+        tombol.classList.remove('active');
+    });
+    
+    if (elemenTombol) {
+        elemenTombol.classList.add('active');
+    }
+
+    if (idHalaman === 'home') {
+        window.muatAnime();
+        window.muatLeaderboard();
+    } else if (idHalaman === 'jadwal') {
+        window.generateKalenderMingguan();
+        window.muatJadwalAnime();
+    } else if (idHalaman === 'profil') {
+        window.muatProfil();
     }
 };
 
-// --- FUNGSI PROFIL & XP ---
-async function tampilkanProfil(user) {
-    try {
-        const docSnap = await getDoc(doc(db, "users", user.uid));
-        if (!docSnap.exists()) return;
-        const data = docSnap.data();
-        // Perbaikan: Pastikan xp dan level ada nilainya agar tidak NaN
-        document.getElementById('profileContent').innerHTML = `
-            <img src="${data.photo}" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; margin-bottom:10px;">
-            <h3>${data.nama}</h3>
-            <p class="role" style="color:#f39c12;">● Premium Member</p>
-            <div style="margin-top:20px; text-align:left; border-top:1px solid #333; padding-top:15px;">
-                <p>📧 ${data.email}</p>
-                <div style="display:flex; justify-content:space-between; margin-top:15px;">
-                    <span>Level: ${data.level || 1}</span>
-                    <span>XP: ${data.xp || 0}</span>
-                </div>
+// ==========================================
+// 2. FUNGSI PROFIL (UPDATE XP DINAMIS)
+// ==========================================
+window.muatProfil = async function() {
+    const user = auth.currentUser;
+    const xpDisplay = document.getElementById("xpDisplay");
+    if (user && xpDisplay) {
+        try {
+            const userSnap = await getDoc(doc(db, "users", user.uid));
+            if (userSnap.exists()) {
+                const data = userSnap.data();
+                xpDisplay.innerText = `XP Anda: ${(data.xp || 0).toLocaleString()} XP`;
+            }
+        } catch (e) {
+            console.error("Gagal memuat profil:", e);
+        }
+    }
+};
+
+// ==========================================
+// 3. LOGIKA KALENDER TANGGAL DINAMIS
+// ==========================================
+window.generateKalenderMingguan = function() {
+    const tabsContainer = document.getElementById("dayTabsContainer");
+    if (!tabsContainer) return;
+    const sekarang = new Date();
+    const hariSekarang = sekarang.getDay();
+    const selisihKeSenin = hariSekarang === 0 ? -6 : 1 - hariSekarang;
+    let tanggalSenin = new Date(sekarang);
+    tanggalSenin.setDate(sekarang.getDate() + selisihKeSenin);
+    let htmlTabs = "";
+    for (let i = 0; i < 7; i++) {
+        let tanggalHariIni = new Date(tanggalSenin);
+        tanggalHariIni.setDate(tanggalSenin.getDate() + i);
+        const namaHari = daftarNamaHari[i];
+        const angkaTanggal = tanggalHariIni.getDate(); 
+        const singkatanHari = namaHari === "Minggu" ? "Mingg" : namaHari.substring(0, 3);
+        const statusActiveBubble = (namaHari === hariAktif) ? "active" : "";
+        htmlTabs += `
+            <div class="day-tab-item" onclick="gantiHari('${namaHari}', this)">
+                <span class="day-bubble ${statusActiveBubble}">${singkatanHari}</span>
+                <span class="day-sub">${angkaTanggal}</span>
             </div>
         `;
-    } catch (e) { console.error("Error Profil:", e); }
-}
+    }
+    tabsContainer.innerHTML = htmlTabs;
+};
 
-window.tambahXp = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
+window.gantiHari = function(namaHari, elemen) {
+    hariAktif = namaHari;
+    document.querySelectorAll('.day-bubble').forEach(bubble => bubble.classList.remove('active'));
+    elemen.querySelector('.day-bubble').classList.add('active');
+    window.muatJadwalAnime();
+};
+
+// ==========================================
+// 4. AMBIL DATA JADWAL TAYANG
+// ==========================================
+window.muatJadwalAnime = async function() {
+    const containerJadwal = document.getElementById("jadwal-anime-list");
+    if (!containerJadwal) return;
+    containerJadwal.innerHTML = `<p style="text-align: center; color: #f39c12; margin-top: 30px; font-size:14px;">Memuat jadwal database...</p>`;
     try {
-        const userRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            const newXp = (data.xp || 0) + 20; // Tambahkan OR 0 untuk cegah NaN
-            const newLevel = Math.floor(newXp / 500) + 1;
-            await updateDoc(userRef, { xp: newXp, level: newLevel });
-            tampilkanProfil(user);
+        if (listSemuaAnime.length === 0) {
+            const animeSnapshot = await getDocs(collection(db, "anime"));
+            listSemuaAnime = [];
+            animeSnapshot.forEach((doc) => {
+                listSemuaAnime.push({ id: doc.id, idDokumen: doc.id, ...doc.data() });
+            });
         }
-    } catch (e) { console.error("Error XP:", e); }
+        const namaHariKecil = hariAktif.toLowerCase().trim();
+        const docRefJadwal = doc(db, "jadwal", namaHariKecil);
+        const docSnapJadwal = await getDoc(docRefJadwal);
+        if (!docSnapJadwal.exists()) {
+            containerJadwal.innerHTML = `<p style="text-align: center; color: #777; margin-top: 30px; font-size:14px;">Tidak ada jadwal tayang hari ${hariAktif}.</p>`;
+            return;
+        }
+        const dataJadwal = docSnapJadwal.data();
+        let listNamaJadwalHariIni = [];
+        Object.values(dataJadwal).forEach(val => {
+            if (Array.isArray(val)) listNamaJadwalHariIni = listNamaJadwalHariIni.concat(val);
+            else if (typeof val === 'string') listNamaJadwalHariIni.push(val);
+        });
+        const listNamaNormal = listNamaJadwalHariIni.map(nama => String(nama).toLowerCase().trim());
+        const animeSesuaiJadwal = listSemuaAnime.filter(anime => {
+            const judulUtama = anime.judul ? String(anime.judul).toLowerCase().trim() : "";
+            const idDokumenSatu = anime.id ? String(anime.id).toLowerCase().trim() : "";
+            return listNamaNormal.includes(judulUtama) || listNamaNormal.includes(idDokumenSatu);
+        });
+        containerJadwal.innerHTML = animeSesuaiJadwal.map(data => {
+            let totalEps = data.epsLinks && typeof data.epsLinks === 'object' ? Object.keys(data.epsLinks).length : 0;
+            if (!totalEps && data.totalEpisode) totalEps = data.totalEpisode;
+            const judul = data.judul || "Untitled Anime";
+            const poster = data.posterUrl || "https://via.placeholder.com/150";
+            return `
+                <div class="schedule-card" onclick="bukaVideo('${judul.replace(/'/g, "\\'")}', '${(data.deskripsi || '').replace(/'/g, "\\'")}', '${encodeURIComponent(JSON.stringify(data.epsLinks || {}))}', '${data.genre || 'Anime'}', '${poster}', '${data.idDokumen}')">
+                    <div class="schedule-poster" style="background-image: url('${poster}');"></div>
+                    <div class="schedule-details">
+                        <h4>${judul}</h4>
+                        <div class="sched-eps">${totalEps} Eps</div>
+                        <div class="sched-views">👁️ ${data.views || 0} View</div>
+                        <div class="sched-time-status">${data.jamTayang || '00:00 WIB'} (${data.statusTayang || 'Belum Tayang'})</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        console.error("Gagal memuat jadwal:", e);
+    }
 };
 
-// --- FUNGSI VIDEO ---
-window.gantiVideo = (url) => { 
-    const player = document.getElementById('videoPlayer');
-    player.src = url; 
-    player.play(); 
-    window.tambahXp();
+// ==========================================
+// 5. LEADERBOARD & ANIME GRID
+// ==========================================
+window.muatLeaderboard = async function() {
+    const listLeaderboard = document.getElementById("leaderboard-list");
+    if (!listLeaderboard) return;
+    try {
+        const q = query(collection(db, "users"), orderBy("xp", "desc"), limit(3));
+        const querySnapshot = await getDocs(q);
+        let urutan = 1;
+        let htmlContent = "";
+        querySnapshot.forEach((doc) => {
+            const dataUser = doc.data();
+            const namaTampil = dataUser.nama || dataUser.username || "User";
+            const xpTampil = dataUser.xp !== undefined ? dataUser.xp : 0;
+            htmlContent += `<div class="rank-item"><span class="rank-num">${urutan}</span><span class="user-name">${namaTampil}</span><span class="user-xp">${xpTampil.toLocaleString()} XP</span></div>`;
+            urutan++;
+        });
+        listLeaderboard.innerHTML = htmlContent;
+    } catch (e) { console.error("Gagal memuat leaderboard:", e); }
 };
 
-// --- FUNGSI ANIME ---
 window.muatAnime = async function() {
     const grid = document.querySelector(".anime-grid");
     if (!grid) return;
     try {
         const querySnapshot = await getDocs(collection(db, "anime"));
-        semuaAnime = [];
-        querySnapshot.forEach((doc) => semuaAnime.push({ id: doc.id, ...doc.data() }));
-        renderGrid(semuaAnime);
-    } catch (e) { console.error(e); }
+        listSemuaAnime = [];
+        querySnapshot.forEach((doc) => {
+            listSemuaAnime.push({ id: doc.id, idDokumen: doc.id, ...doc.data() });
+        });
+        window.renderGridAnime(listSemuaAnime);
+    } catch (e) { console.error("Gagal memuat anime:", e); }
 };
 
-// --- RENDER GRID (Struktur asli, ditambahkan pengecekan data) ---
-function renderGrid(dataList, isSearch = false) {
+window.renderGridAnime = function(dataAnime) {
     const grid = document.querySelector(".anime-grid");
     if (!grid) return;
-    grid.innerHTML = "";
-    
-    const dataToDisplay = isSearch ? dataList : dataList.slice(0, 10);
-    
-    dataToDisplay.forEach(data => {
-        const epsLinksStr = encodeURIComponent(JSON.stringify(data.epsLinks || {}));
-        // Perbaikan: gunakan || untuk nilai default
-        const judul = data.judul || "Tanpa Judul";
-        const deskripsi = data.deskripsi || "Tidak ada deskripsi";
-        const genre = data.genre || "";
-        
-        grid.innerHTML += `
-            <div class="anime-item">
-                <div class="poster" style="background-image: url('${data.posterUrl}');" 
-                onclick="bukaVideo('${judul}', '${deskripsi}', '${epsLinksStr}', '${genre}', '${data.posterUrl}')"></div>
-                <p style="text-align:center; font-size: 12px; margin-top:8px;">${judul}</p>
-            </div>
-        `;
-    });
-}
-
-window.cariAnime = () => {
-    const input = document.getElementById('searchInput').value.toLowerCase();
-    renderGrid(input === "" ? semuaAnime : semuaAnime.filter(a => a.judul.toLowerCase().includes(input)), input !== "");
+    grid.innerHTML = dataAnime.map(data => {
+        let totalEps = data.epsLinks && typeof data.epsLinks === 'object' ? Object.keys(data.epsLinks).length : 0;
+        const judul = data.judul || "Untitled Anime";
+        const poster = data.posterUrl || "https://via.placeholder.com/150";
+        return `<div class="anime-item" onclick="bukaVideo('${judul.replace(/'/g, "\\'")}', '${(data.deskripsi || '').replace(/'/g, "\\'")}', '${encodeURIComponent(JSON.stringify(data.epsLinks || {}))}', '${data.genre || 'Anime'}', '${poster}', '${data.idDokumen}')">
+                <div class="poster" style="background-image: url('${poster}');"><div class="overlay-info"><span class="views">👁️ ${data.views || 0}</span><span class="eps">🎬 ${totalEps} Eps</span></div></div>
+                <p class="anime-title">${judul}</p></div>`;
+    }).join('');
 };
 
-// --- BUKA VIDEO (Struktur asli, perbaikan tampilan genre & deskripsi) ---
-window.bukaVideo = (judul, deskripsi, epsLinksStr, genre, posterUrl) => {
+window.inisialisasiPencarian = function() {
+    const searchInput = document.getElementById("searchInput");
+    if (!searchInput) return;
+    searchInput.addEventListener("input", (e) => {
+        const kataKunci = e.target.value.toLowerCase().trim();
+        const hasilFilter = listSemuaAnime.filter(anime => 
+            (anime.judul || "").toLowerCase().includes(kataKunci) || (anime.id || "").toLowerCase().includes(kataKunci)
+        );
+        window.renderGridAnime(hasilFilter);
+    });
+};
+
+// ==========================================
+// 6. VIDEO PLAYER, KOMENTAR, FAVORIT & MODAL
+// ==========================================
+window.bukaVideo = (judul, deskripsi, epsLinksStr, genre, posterUrl, animeId) => {
     const modal = document.getElementById('videoModal');
-    const player = document.getElementById('videoPlayer');
     const info = document.getElementById('videoInfo');
+    if (!modal || !info) return;
     const epsLinks = JSON.parse(decodeURIComponent(epsLinksStr));
     
-    if (modal && player) {
-        const keys = Object.keys(epsLinks).sort();
-        player.src = epsLinks[keys[0]];
-        player.load();
-        window.tambahXp();
-        
-        let episodeList = keys.map(k => `<button class="eps-btn" onclick="gantiVideo('${epsLinks[k]}')">Ep ${k}</button>`).join('');
-        
-        // Perbaikan: genre dibungkus agar rapi
-        const genreTags = genre ? genre.split(',').map(g => `<span class="genre-tag">${g.trim()}</span>`).join('') : "";
-        
-        info.innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px;">
-                <button onclick="tambahFavorit('${judul}', '${posterUrl}', '${deskripsi}', '${epsLinksStr}', '${genre}')" style="background:transparent; border:none; color:#e74c3c; font-size:24px; cursor:pointer;">❤️</button>
-                <h2 style="margin:0;">${judul}</h2>
+    info.innerHTML = `
+        <div id="mediaContainer" class="video-wrapper">
+            <div id="posterPreview" style="width:100%; aspect-ratio:16/9; background:url('${posterUrl}') center/cover; border-radius:12px; margin-bottom: 15px;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="flex:1;">
+                <h2 class="modal-anime-title" style="margin:0;">${judul}</h2>
+                <div class="modal-anime-genre">${genre}</div>
             </div>
-            <div style="margin: 10px 0;">${genreTags}</div>
-            <p style="margin-top:15px; font-size:14px; color:#ccc;">${deskripsi}</p>
-            <h3 style="margin-top:20px;">Daftar Episode</h3>
-            <div class="eps-scroll-container">${episodeList}</div>`;
-        modal.style.display = 'block';
+            <img src="https://cdn.phototourl.com/free/2026-06-22-f75bfb57-fc0f-4cd5-9aa1-fe612555a4e9.png" id="btnFavorit" style="width:28px; cursor:pointer;" title="Simpan ke Favorit">
+        </div>
+        <hr class="modal-divider">
+        <p class="modal-anime-desc">${deskripsi}</p>
+        <hr class="modal-divider"><h3 class="modal-eps-title">Daftar Episode</h3>
+        <div id="eps-list-container">${Object.keys(epsLinks).length > 0 ? Object.keys(epsLinks).map(k => `<button class="eps-btn" onclick="pilihEpisode('${epsLinks[k]}', '${animeId}')">${k}</button>`).join('') : '<p>Belum ada episode.</p>'}</div>
+        
+        <div id="comments-wrapper" style="display:none; margin-top:20px;">
+            <div class="comments-section">
+                <div class="comments-count">Komentar</div>
+                <div class="comment-form">
+                    <input type="text" id="inputKomentar" class="comment-input" placeholder="Tulis komentar...">
+                    <button class="comment-submit-btn" onclick="window.kirimKomentar('${animeId}')">➤</button>
+                </div>
+                <div id="comments-list"></div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('btnFavorit').onclick = () => {
+        let fav = JSON.parse(localStorage.getItem('daftarFavorit')) || [];
+        if (!fav.find(a => a.animeId === animeId)) {
+            fav.push({judul, posterUrl, animeId});
+            localStorage.setItem('daftarFavorit', JSON.stringify(fav));
+            alert("Tersimpan ke favorit!");
+        } else {
+            alert("Sudah ada di daftar favorit.");
+        }
+    };
+    
+    modal.style.display = 'block';
+};
+
+window.pilihEpisode = (url, animeId) => {
+    const mediaBox = document.getElementById('mediaContainer');
+    const commWrapper = document.getElementById('comments-wrapper');
+    if (!mediaBox) return;
+    
+    // Kode disisipkan: Video langsung autoplay dan menggunakan kontrol bawaan browser yang sudah di-style putih via CSS
+    mediaBox.innerHTML = `<video id="playerVideo" src="${url}" controls autoplay playsinline style="width:100%; aspect-ratio:16/9; border-radius:12px; background:#000;"></video>`;
+    
+    if(commWrapper) {
+        commWrapper.style.display = 'block';
+        window.renderKomentar(animeId);
     }
 };
 
-// --- FUNGSI FAVORIT ---
-window.tambahFavorit = (judul, posterUrl, deskripsi, epsLinksStr, genre) => {
-    let favs = JSON.parse(localStorage.getItem('favoritMiko') || '[]');
-    if (!favs.find(a => a.judul === judul)) {
-        favs.push({ judul, posterUrl, deskripsi, epsLinksStr, genre });
-        localStorage.setItem('favoritMiko', JSON.stringify(favs));
-        alert("Berhasil ditambah ke favorit!");
-    } else { alert("Sudah ada di favorit!"); }
-};
-
-window.hapusFavorit = (judul) => {
-    let favs = JSON.parse(localStorage.getItem('favoritMiko') || '[]');
-    favs = favs.filter(a => a.judul !== judul);
-    localStorage.setItem('favoritMiko', JSON.stringify(favs));
-    window.muatFavorit();
-};
-
-window.muatFavorit = () => {
-    const grid = document.getElementById('favorit-grid');
-    if (!grid) return;
-    const favs = JSON.parse(localStorage.getItem('favoritMiko') || '[]');
-    grid.innerHTML = "";
-    favs.forEach(data => {
-        grid.innerHTML += `
-            <div class="anime-item" style="position:relative;">
-                <button onclick="hapusFavorit('${data.judul}')" style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.6); border:none; color:white; border-radius:50%; width:25px; height:25px; cursor:pointer;">×</button>
-                <div class="poster" style="background-image: url('${data.posterUrl}');" 
-                onclick="bukaVideo('${data.judul}', '${data.deskripsi}', '${data.epsLinksStr}', '${data.genre}', '${data.posterUrl}')"></div>
-                <p style="text-align:center; font-size: 12px; margin-top:8px;">${data.judul}</p>
-            </div>
-        `;
+window.kirimKomentar = async (animeId) => {
+    const input = document.getElementById("inputKomentar");
+    if (!input.value) return;
+    const user = auth.currentUser;
+    await addDoc(collection(db, "anime", animeId, "comments"), {
+        username: user ? user.displayName : "Guest",
+        text: input.value,
+        createdAt: serverTimestamp()
     });
+    input.value = "";
 };
 
-// --- NAVIGASI ---
-window.pindah = (id) => {
-    document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
-    document.getElementById(id).style.display = 'block';
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.getAttribute('onclick').includes(id)) btn.classList.add('active');
-    });
-    if(id === 'favorit') window.muatFavorit();
-};
-
-window.pilihHari = async (btn, hari) => {
-    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const content = document.getElementById('jadwal-content');
-    content.innerHTML = `<p style="text-align:center;">Memuat...</p>`;
-    try {
-        const docSnap = await getDoc(doc(db, "jadwal", hari));
-        if (docSnap.exists()) {
-            let html = ``;
-            for (const id of docSnap.data().animeIds) {
-                const animeSnap = await getDoc(doc(db, "anime", id));
-                if (animeSnap.exists()) {
-                    const a = animeSnap.data();
-                    html += `
-                    <div class="item-card" onclick="bukaVideo('${a.judul}', '${a.deskripsi}', '${encodeURIComponent(JSON.stringify(a.epsLinks))}', '${a.genre || ''}', '${a.posterUrl}')">
-                        <div class="thumb-small" style="background-image:url('${a.posterUrl}'); background-size:cover;"></div>
-                        <div class="item-info">
-                            <strong style="font-size:16px;">${a.judul}</strong><br>
-                            <small style="color:#f39c12;">${a.jamTayang || "-"} WIB</small>
-                            <span style="color:#00e676; font-size:12px; margin-left:8px; font-weight:bold;">${a.epsRilis || "New"}</span>
-                        </div>
+window.renderKomentar = (animeId) => {
+    const q = query(collection(db, "anime", animeId, "comments"), orderBy("createdAt", "desc"));
+    onSnapshot(q, (snapshot) => {
+        const list = document.getElementById("comments-list");
+        if(!list) return;
+        list.innerHTML = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return `<div class="comment-item">
+                        <div class="comment-user">${data.username}</div>
+                        <div class="comment-text">${data.text}</div>
                     </div>`;
-                }
-            }
-            content.innerHTML = html;
-        } else { content.innerHTML = `<p style="text-align:center;">Belum ada jadwal.</p>`; }
-    } catch (e) { console.error("Error Jadwal:", e); }
+        }).join('');
+    });
 };
 
-window.tutupVideo = () => { document.getElementById('videoPlayer').pause(); document.getElementById('videoModal').style.display = 'none'; };
-            
+window.tutupVideo = () => { 
+    const modal = document.getElementById('videoModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+    window.muatAnime();
+    window.muatLeaderboard();
+    window.inisialisasiPencarian();
+});
+    
