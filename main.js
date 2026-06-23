@@ -1,5 +1,5 @@
 import { db } from "./firebase-config.js";
-import { collection, getDocs, doc, getDoc, query, orderBy, limit, addDoc, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { collection, getDocs, doc, getDoc, query, orderBy, limit, addDoc, serverTimestamp, onSnapshot, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
 // Cache data lokal agar tidak boros kuota query Firestore
@@ -39,6 +39,8 @@ window.navigasiKe = function(idHalaman, elemenTombol) {
         window.muatJadwalAnime();
     } else if (idHalaman === 'profil') {
         window.muatProfil();
+    } else if (idHalaman === 'page-favorit') {
+        window.renderHalamanFavorit();
     }
 };
 
@@ -136,8 +138,18 @@ window.muatJadwalAnime = async function() {
             if (!totalEps && data.totalEpisode) totalEps = data.totalEpisode;
             const judul = data.judul || "Untitled Anime";
             const poster = data.posterUrl || "https://via.placeholder.com/150";
+            
+            const dataEncode = btoa(unescape(encodeURIComponent(JSON.stringify({
+                judul: judul,
+                deskripsi: data.deskripsi || '',
+                epsLinks: data.epsLinks || {},
+                genre: data.genre || 'Anime',
+                poster: poster,
+                idDokumen: data.idDokumen
+            }))));
+
             return `
-                <div class="schedule-card" onclick="bukaVideo('${judul.replace(/'/g, "\\'")}', '${(data.deskripsi || '').replace(/'/g, "\\'")}', '${encodeURIComponent(JSON.stringify(data.epsLinks || {}))}', '${data.genre || 'Anime'}', '${poster}', '${data.idDokumen}')">
+                <div class="schedule-card" onclick="window.bukaVideoEncoded('${dataEncode}')">
                     <div class="schedule-poster" style="background-image: url('${poster}');"></div>
                     <div class="schedule-details">
                         <h4>${judul}</h4>
@@ -195,10 +207,25 @@ window.renderGridAnime = function(dataAnime) {
         let totalEps = data.epsLinks && typeof data.epsLinks === 'object' ? Object.keys(data.epsLinks).length : 0;
         const judul = data.judul || "Untitled Anime";
         const poster = data.posterUrl || "https://via.placeholder.com/150";
-        return `<div class="anime-item" onclick="bukaVideo('${judul.replace(/'/g, "\\'")}', '${(data.deskripsi || '').replace(/'/g, "\\'")}', '${encodeURIComponent(JSON.stringify(data.epsLinks || {}))}', '${data.genre || 'Anime'}', '${poster}', '${data.idDokumen}')">
-                <div class="poster" style="background-image: url('${poster}');"><div class="overlay-info"><span class="views">👁️ ${data.views || 0}</span><span class="eps">🎬 ${totalEps} Eps</span></div></div>
-                <p class="anime-title">${judul}</p></div>`;
+        
+        const dataEncode = btoa(unescape(encodeURIComponent(JSON.stringify({
+            judul: judul,
+            deskripsi: data.deskripsi || '',
+            epsLinks: data.epsLinks || {},
+            genre: data.genre || 'Anime',
+            poster: poster,
+            idDokumen: data.idDokumen
+        }))));
+
+        return `<div class="anime-item" onclick="window.bukaVideoEncoded('${dataEncode}')">
+                <div class="poster" style="background-image: url('${poster}'); pointer-events: none;"><div class="overlay-info" style="pointer-events: none;"><span class="views" style="pointer-events: none;">👁️ ${data.views || 0}</span><span class="eps" style="pointer-events: none;">🎬 ${totalEps} Eps</span></div></div>
+                <p class="anime-title" style="pointer-events: none;">${judul}</p></div>`;
     }).join('');
+};
+
+window.bukaVideoEncoded = function(encoded) {
+    const data = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+    window.bukaVideo(data.judul, data.deskripsi, encodeURIComponent(JSON.stringify(data.epsLinks)), data.genre, data.poster, data.idDokumen);
 };
 
 window.inisialisasiPencarian = function() {
@@ -216,6 +243,52 @@ window.inisialisasiPencarian = function() {
 // ==========================================
 // 6. VIDEO PLAYER, KOMENTAR, FAVORIT & MODAL
 // ==========================================
+window.toggleFavorit = async function(judul, posterUrl, animeId) {
+    const user = auth.currentUser;
+    if (!user) { alert("Login dulu untuk simpan favorit!"); return; }
+    const userRef = doc(db, "users", user.uid);
+    const dataFav = { animeId, judul, posterUrl };
+    const userSnap = await getDoc(userRef);
+    const favList = userSnap.exists() ? (userSnap.data().favorit || []) : [];
+    const isFavorited = favList.find(a => a.animeId === animeId);
+    if (isFavorited) {
+        await updateDoc(userRef, { favorit: arrayRemove(isFavorited) });
+        alert("Dihapus dari favorit");
+    } else {
+        await updateDoc(userRef, { favorit: arrayUnion(dataFav) });
+        alert("Berhasil disimpan ke akun!");
+    }
+};
+
+// PERBAIKAN: Fungsi ini sekarang akan menampilkan data dari Firestore
+window.renderHalamanFavorit = async function() {
+    const user = auth.currentUser;
+    const container = document.getElementById("favorit-list");
+    if (!container) return;
+    
+    if (!user) {
+        container.innerHTML = `<p style="text-align:center; color:#777; margin-top:20px;">Silakan login untuk melihat favorit Anda.</p>`;
+        return;
+    }
+
+    container.innerHTML = `<p style="text-align:center; color:#777; margin-top:20px;">Memuat favorit...</p>`;
+    
+    const userSnap = await getDoc(doc(db, "users", user.uid));
+    const fav = userSnap.exists() ? (userSnap.data().favorit || []) : [];
+    
+    if (fav.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color:#777; margin-top:20px;">Belum ada anime favorit.</p>`;
+        return;
+    }
+    
+    container.innerHTML = fav.map(data => `
+        <div class="anime-item" onclick="window.location.href='index.html?id=${data.animeId}'">
+            <div class="poster" style="background-image: url('${data.posterUrl}');"></div>
+            <p class="anime-title">${data.judul}</p>
+        </div>
+    `).join('');
+};
+
 window.bukaVideo = (judul, deskripsi, epsLinksStr, genre, posterUrl, animeId) => {
     const modal = document.getElementById('videoModal');
     const info = document.getElementById('videoInfo');
@@ -223,43 +296,36 @@ window.bukaVideo = (judul, deskripsi, epsLinksStr, genre, posterUrl, animeId) =>
     const epsLinks = JSON.parse(decodeURIComponent(epsLinksStr));
     
     info.innerHTML = `
-        <div id="mediaContainer" class="video-wrapper">
-            <div id="posterPreview" style="width:100%; aspect-ratio:16/9; background:url('${posterUrl}') center/cover; border-radius:12px; margin-bottom: 15px;"></div>
+        <div id="mediaContainer" class="video-wrapper" style="margin:0 !important; padding:0 !important;">
+            <div id="posterPreview" style="width:100%; aspect-ratio:16/9; background:url('${posterUrl}') center/cover;"></div>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div style="flex:1;">
-                <h2 class="modal-anime-title" style="margin:0;">${judul}</h2>
-                <div class="modal-anime-genre">${genre}</div>
-            </div>
-            <img src="https://cdn.phototourl.com/free/2026-06-22-f75bfb57-fc0f-4cd5-9aa1-fe612555a4e9.png" id="btnFavorit" style="width:28px; cursor:pointer;" title="Simpan ke Favorit">
-        </div>
-        <hr class="modal-divider">
-        <p class="modal-anime-desc">${deskripsi}</p>
-        <hr class="modal-divider"><h3 class="modal-eps-title">Daftar Episode</h3>
-        <div id="eps-list-container">${Object.keys(epsLinks).length > 0 ? Object.keys(epsLinks).map(k => `<button class="eps-btn" onclick="pilihEpisode('${epsLinks[k]}', '${animeId}')">${k}</button>`).join('') : '<p>Belum ada episode.</p>'}</div>
-        
-        <div id="comments-wrapper" style="display:none; margin-top:20px;">
-            <div class="comments-section">
-                <div class="comments-count">Komentar</div>
-                <div class="comment-form">
-                    <input type="text" id="inputKomentar" class="comment-input" placeholder="Tulis komentar...">
-                    <button class="comment-submit-btn" onclick="window.kirimKomentar('${animeId}')">➤</button>
+        <div style="padding: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="flex:1;">
+                    <h2 class="modal-anime-title" style="margin:0;">${judul}</h2>
+                    <div class="modal-anime-genre">${genre}</div>
                 </div>
-                <div id="comments-list"></div>
+                <img src="https://cdn.phototourl.com/free/2026-06-22-f75bfb57-fc0f-4cd5-9aa1-fe612555a4e9.png" onclick="window.toggleFavorit('${judul}', '${posterUrl}', '${animeId}')" style="width:28px; cursor:pointer;" title="Simpan ke Favorit">
+            </div>
+            <hr class="modal-divider">
+            <p class="modal-anime-desc">${deskripsi}</p>
+            <hr class="modal-divider"><h3 class="modal-eps-title">Daftar Episode</h3>
+            <div id="eps-list-container" style="display:flex; flex-wrap:wrap; gap:8px;">
+                ${Object.keys(epsLinks).filter(k => epsLinks[k] && epsLinks[k].trim() !== "").map(k => `<button class="eps-btn" onclick="pilihEpisode('${epsLinks[k]}', '${animeId}')">${k}</button>`).join('') || '<p>Belum ada episode.</p>'}
+            </div>
+            
+            <div id="comments-wrapper" style="display:none; margin-top:20px;">
+                <div class="comments-section">
+                    <div class="comments-count">Komentar</div>
+                    <div class="comment-form">
+                        <input type="text" id="inputKomentar" class="comment-input" placeholder="Tulis komentar...">
+                        <button class="comment-submit-btn" onclick="window.kirimKomentar('${animeId}')">➤</button>
+                    </div>
+                    <div id="comments-list"></div>
+                </div>
             </div>
         </div>
     `;
-
-    document.getElementById('btnFavorit').onclick = () => {
-        let fav = JSON.parse(localStorage.getItem('daftarFavorit')) || [];
-        if (!fav.find(a => a.animeId === animeId)) {
-            fav.push({judul, posterUrl, animeId});
-            localStorage.setItem('daftarFavorit', JSON.stringify(fav));
-            alert("Tersimpan ke favorit!");
-        } else {
-            alert("Sudah ada di daftar favorit.");
-        }
-    };
     
     modal.style.display = 'block';
 };
@@ -269,8 +335,7 @@ window.pilihEpisode = (url, animeId) => {
     const commWrapper = document.getElementById('comments-wrapper');
     if (!mediaBox) return;
     
-    // Kode disisipkan: Video langsung autoplay dan menggunakan kontrol bawaan browser yang sudah di-style putih via CSS
-    mediaBox.innerHTML = `<video id="playerVideo" src="${url}" controls autoplay playsinline style="width:100%; aspect-ratio:16/9; border-radius:12px; background:#000;"></video>`;
+    mediaBox.innerHTML = `<video id="playerVideo" src="${url}" controls autoplay playsinline style="width:100%; aspect-ratio:16/9; background:#000;"></video>`;
     
     if(commWrapper) {
         commWrapper.style.display = 'block';
