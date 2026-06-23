@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Halaman Utama (Home, Jadwal, Favorit, Profil tetap sama) -->
     <div class="page" id="home">
         <header><div class="logo-box">M</div><h1>Miko<span>Strem</span></h1></header>
         <div class="leaderboard-card"><h3 class="leaderboard-title">LEADERBOARD XP</h3><div id="leaderboard-list"></div></div>
@@ -15,15 +14,15 @@
         <h3 class="section-title">ANIME POPULER</h3><div class="anime-grid"></div>
     </div>
 
-    <div class="page" id="jadwal">
+    <div class="page" id="jadwal" style="display:none;">
         <h2 class="calendar-header-title">Jadwal Tayang</h2>
         <div class="day-tabs-container" id="dayTabsContainer"></div>
         <div id="jadwal-anime-list"></div>
     </div>
 
-    <div class="page" id="favorit">
+    <div class="page" id="page-favorit" style="display:none;">
         <h3 class="section-title">Anime Favorit</h3>
-        <p style="text-align:center; color:#777; margin-top:50px;">Fitur Favorit Segera Hadir.</p>
+        <div id="favorit-list" class="anime-grid"></div>
     </div>
 
     <div class="page" id="profil" style="display:none;">
@@ -43,12 +42,10 @@
         </div>
     </div>
 
-    <!-- MODAL LENGKAP: JUDUL, FAVORIT, DESKRIPSI, EPISODE, & KOMENTAR -->
     <div id="videoModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="tutupVideo()">&times;</span>
             <div id="videoInfo">
-                <!-- Header Judul & Favorit -->
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div>
                         <h3 class="modal-anime-title">Nama Anime</h3>
@@ -63,12 +60,11 @@
                 <h4 class="modal-eps-title">DAFTAR EPISODE</h4>
                 <div id="eps-list-container"></div>
 
-                <!-- Bagian Komentar Dikembalikan -->
                 <div class="comments-section">
                     <div class="comments-count">Komentar</div>
                     <div class="comment-form">
-                        <input type="text" class="comment-input" placeholder="Tulis komentar...">
-                        <button class="comment-submit-btn">➤</button>
+                        <input type="text" id="inputKomentar" class="comment-input" placeholder="Tulis komentar...">
+                        <button class="comment-submit-btn" onclick="window.kirimKomentar(animeId)">➤</button>
                     </div>
                     <div id="comments-list"></div>
                 </div>
@@ -76,7 +72,6 @@
         </div>
     </div>
 
-    <!-- Bottom Nav -->
     <div class="bottom-nav">
         <button class="nav-btn active" onclick="navigasiKe('home', this)">
             <img src="https://cdn.phototourl.com/free/2026-06-22-807000d1-0ae1-427c-bd51-d50015842c0f.png" alt="Home">
@@ -86,7 +81,7 @@
             <img src="https://cdn.phototourl.com/free/2026-06-22-03b1b6e0-7195-494a-98fe-1e7e99394082.png" alt="Jadwal">
             <span>Jadwal</span>
         </button>
-        <button class="nav-btn" onclick="navigasiKe('favorit', this)">
+        <button class="nav-btn" onclick="navigasiKe('page-favorit', this)">
             <img src="https://cdn.phototourl.com/free/2026-06-22-f75bfb57-fc0f-4cd5-9aa1-fe612555a4e9.png" alt="Favorite">
             <span>Favorite</span>
         </button>
