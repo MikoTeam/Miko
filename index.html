@@ -3,67 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MikoStrem - Premium</title>
+    <title>MikoStrem</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Halaman Utama (Home, Jadwal, Favorit, Profil tetap sama) -->
+    <div class="page" id="home">
+        <header><div class="logo-box">M</div><h1>Miko<span>Strem</span></h1></header>
+        <div class="leaderboard-card"><h3 class="leaderboard-title">LEADERBOARD XP</h3><div id="leaderboard-list"></div></div>
+        <div class="search-container"><input type="text" id="searchInput" placeholder="Cari Anime..."></div>
+        <h3 class="section-title">ANIME POPULER</h3><div class="anime-grid"></div>
+    </div>
 
-<div id="loginScreen" style="text-align:center; padding: 100px 20px;">
-    <h1 style="color:#f39c12; margin-bottom:10px;">MikoStrem</h1>
-    <p style="margin-bottom: 30px; color:#ccc;">Platform streaming premium. Login untuk akses fitur lengkap.</p>
-    <button onclick="loginGoogle()" style="padding:15px 30px; background:#f39c12; border:none; border-radius:50px; font-weight:bold; cursor:pointer; font-size:16px;">Login dengan Google</button>
-</div>
+    <div class="page" id="jadwal">
+        <h2 class="calendar-header-title">Jadwal Tayang</h2>
+        <div class="day-tabs-container" id="dayTabsContainer"></div>
+        <div id="jadwal-anime-list"></div>
+    </div>
 
-<div id="mainApp" style="display: none;">
-    
-    <div id="home" class="page" style="display: block;">
-        <div class="header-premium">
-            <div class="brand-container">
-                <div class="brand-icon">M</div> 
-                <h1 class="brand-title">MikoStrem</h1>
+    <div class="page" id="favorit">
+        <h3 class="section-title">Anime Favorit</h3>
+        <p style="text-align:center; color:#777; margin-top:50px;">Fitur Favorit Segera Hadir.</p>
+    </div>
+
+    <div class="page" id="profil" style="display:none;">
+        <div class="profile-header-container">
+            <img src="https://cdn.phototourl.com/free/2026-06-22-e9ba5001-cb39-469f-a0f1-5cc220c2024e.png" class="icon-notif" alt="Notifikasi">
+            <div class="profile-right-icons">
+                <img src="https://cdn.phototourl.com/free/2026-06-22-63514f64-8886-40d4-a097-07c7c2a8002e.png" class="icon-setting" alt="Pengaturan">
+                <img src="https://cdn.phototourl.com/free/2026-06-22-a8d87822-c571-4b63-9ead-489db5667b15.png" class="icon-chat" alt="Chat">
             </div>
-            <input type="text" id="searchInput" placeholder="Cari anime..." oninput="cariAnime()">
         </div>
-        <div class="xp-card"><h3>👑 TOP 3 XP USERS</h3></div>
-        <div class="section-title">Anime Populer</div>
-        <div class="anime-grid"></div>
-    </div>
-
-    <div id="jadwal" class="page">
-        <h2 class="page-title" style="padding: 0 20px;">Jadwal Tayang</h2>
-        <div class="day-scroll">
-            <button class="day-btn active" onclick="pilihHari(this, 'Senin')">Senin</button>
-            <button class="day-btn" onclick="pilihHari(this, 'Selasa')">Selasa</button>
-            <button class="day-btn" onclick="pilihHari(this, 'Rabu')">Rabu</button>
-            <button class="day-btn" onclick="pilihHari(this, 'Kamis')">Kamis</button>
+        <h3 class="section-title">Profil Pengguna</h3>
+        <div class="profile-card-center" style="background:#11141a; padding:20px; border-radius:12px; border:1px solid #1f2833; text-align:center; margin-top:15px;">
+            <div class="avatar-large" style="width:70px; height:70px; background:#f39c12; color:#000; font-size:28px; font-weight:900; display:flex; align-items:center; justify-content:center; border-radius:50%; margin:0 auto 15px auto;">M</div>
+            <h3 style="color:#fff;">DenPutra</h3>
+            <p style="color:#f39c12; font-size:12px; font-weight:bold;">User Premium</p>
+            <div id="xpDisplay" style="background:#1f2833; padding:10px; border-radius:8px; margin-top:10px;">XP Anda: Memuat...</div>
         </div>
-        <div id="jadwal-content" style="margin-top:20px;"></div>
     </div>
 
-    <div id="favorit" class="page">
-        <h2 class="page-title" style="padding: 0 20px;">Favorit Saya</h2>
-        <div id="favorit-grid" class="anime-grid"></div>
+    <!-- MODAL LENGKAP: JUDUL, FAVORIT, DESKRIPSI, EPISODE, & KOMENTAR -->
+    <div id="videoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="tutupVideo()">&times;</span>
+            <div id="videoInfo">
+                <!-- Header Judul & Favorit -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h3 class="modal-anime-title">Nama Anime</h3>
+                        <p class="modal-anime-genre">GENRE ANIME</p>
+                    </div>
+                    <img src="https://cdn.phototourl.com/free/2026-06-22-f75bfb57-fc0f-4cd5-9aa1-fe612555a4e9.png" 
+                         id="btnFavorit" alt="Favorit" style="width: 28px; cursor: pointer; margin-top: 5px;">
+                </div>
+
+                <hr class="modal-divider">
+                <p class="modal-anime-desc">Deskripsi anime akan muncul di sini...</p>
+                <h4 class="modal-eps-title">DAFTAR EPISODE</h4>
+                <div id="eps-list-container"></div>
+
+                <!-- Bagian Komentar Dikembalikan -->
+                <div class="comments-section">
+                    <div class="comments-count">Komentar</div>
+                    <div class="comment-form">
+                        <input type="text" class="comment-input" placeholder="Tulis komentar...">
+                        <button class="comment-submit-btn">➤</button>
+                    </div>
+                    <div id="comments-list"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div id="profil" class="page">
-        <h2 class="page-title" style="padding: 0 20px;">Profil Saya</h2>
-        <div class="profile-card-center" id="profileContent"></div>
+    <!-- Bottom Nav -->
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="navigasiKe('home', this)">
+            <img src="https://cdn.phototourl.com/free/2026-06-22-807000d1-0ae1-427c-bd51-d50015842c0f.png" alt="Home">
+            <span>Home</span>
+        </button>
+        <button class="nav-btn" onclick="navigasiKe('jadwal', this)">
+            <img src="https://cdn.phototourl.com/free/2026-06-22-03b1b6e0-7195-494a-98fe-1e7e99394082.png" alt="Jadwal">
+            <span>Jadwal</span>
+        </button>
+        <button class="nav-btn" onclick="navigasiKe('favorit', this)">
+            <img src="https://cdn.phototourl.com/free/2026-06-22-f75bfb57-fc0f-4cd5-9aa1-fe612555a4e9.png" alt="Favorite">
+            <span>Favorite</span>
+        </button>
+        <button class="nav-btn" onclick="navigasiKe('profil', this)">
+            <img src="https://cdn.phototourl.com/free/2026-06-22-46de19e4-973b-48dd-9372-5c6c0dafa2da.png" alt="Profile">
+            <span>Profile</span>
+        </button>
     </div>
 
-    <nav class="nav-bottom">
-        <button class="nav-btn active" onclick="pindah('home')">Home</button>
-        <button class="nav-btn" onclick="pindah('jadwal')">Jadwal</button>
-        <button class="nav-btn" onclick="pindah('favorit')">Favorit</button>
-        <button class="nav-btn" onclick="pindah('profil')">Profil</button>
-    </nav>
-</div>
-
-<div id="videoModal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; padding:20px; overflow-y:auto;">
-    <button onclick="tutupVideo()" style="cursor:pointer; background:none; border:none; color:white; font-size:24px;">✕</button>
-    <video id="videoPlayer" controls autoplay playsinline style="width:100%; margin-top:20px; border-radius:10px;"></video>
-    <div id="videoInfo" style="margin-top:20px; color:white; padding-bottom:50px;"></div>
-</div>
- 
-<script type="module" src="main.js"></script>
+    <script type="module" src="main.js"></script>
 </body>
-</html>
+    </html>
+    
