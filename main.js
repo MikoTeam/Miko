@@ -54,7 +54,6 @@ window.muatProfil = async function() {
             const data = userSnap.data();
             const xp = data.xp || 0;
 
-            // Logika Level Bertahap: 120, 240, 480, 960... (Kelipatan 2x)
             let level = 1;
             let targetXP = 120;
             while (xp >= targetXP) {
@@ -103,14 +102,14 @@ window.mulaiFarmingXP = function(animeId) {
     if (!user) return;
     clearInterval(intervalFarming);
     intervalFarming = setInterval(async () => {
-        let xpGained = Math.floor(Math.random() * 100) + 1; // 1-100 XP
-        if (Math.random() < 0.1) xpGained = 1000; // 10% peluang dapat 1000 XP
+        let xpGained = Math.floor(Math.random() * 100) + 1;
+        if (Math.random() < 0.1) xpGained = 1000;
         await updateDoc(doc(db, "users", user.uid), { xp: increment(xpGained) });
-    }, 60000); // 1 Menit
+    }, 60000);
 };
 
 // ==========================================
-// 4. GENERATE KALENDER & JADWAL (TETAP)
+// 4. GENERATE KALENDER & JADWAL
 // ==========================================
 window.generateKalenderMingguan = function() {
     const tabsContainer = document.getElementById("dayTabsContainer");
@@ -329,12 +328,12 @@ window.renderHalamanFavorit = async function() {
             }))));
 
             return `
-                <div class="anime-item">
+                <div class="anime-item" style="margin-bottom: 25px;">
                     <div class="poster" style="background-image: url('${data.posterUrl}'); cursor:pointer; position:relative;" onclick="window.bukaVideoEncoded('${dataEncode}')">
                         <div onclick="event.stopPropagation(); window.toggleFavorit('${data.judul}', '${data.posterUrl}', '${data.animeId}');" 
                              style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.6); color:white; border-radius:50%; width:22px; height:22px; text-align:center; font-size:14px; cursor:pointer; line-height:20px; z-index:10;">X</div>
                     </div>
-                    <p class="anime-title" style="cursor:pointer;" onclick="window.bukaVideoEncoded('${dataEncode}')">${data.judul}</p>
+                    <p class="anime-title" style="cursor:pointer; margin-top:10px;" onclick="window.bukaVideoEncoded('${dataEncode}')">${data.judul}</p>
                 </div>
             `;
         }).join('');
@@ -350,16 +349,18 @@ window.bukaVideo = (judul, deskripsi, epsLinksStr, genre, posterUrl, animeId) =>
     const epsLinks = JSON.parse(decodeURIComponent(epsLinksStr));
     
     info.innerHTML = `
-        <div id="mediaContainer" class="video-wrapper" style="margin:0 !important; padding:0 !important;">
+        <div id="mediaContainer" class="video-wrapper" style="margin:0 !important; padding:0 !important; position:relative;">
+            <div onclick="event.stopPropagation(); window.tutupVideo();" style="position:absolute; top:10px; right:10px; z-index:9999; cursor:pointer; background:rgba(0,0,0,0.5); color:white; width:25px; height:25px; text-align:center; line-height:25px; border-radius:50%; font-size:16px; font-weight:bold;">X</div>
             <div id="posterPreview" style="width:100%; aspect-ratio:16/9; background:url('${posterUrl}') center/cover;"></div>
         </div>
         <div style="padding: 15px;">
-            <h2 class="modal-anime-title" style="margin:0;">${judul}</h2>
-            <div class="modal-anime-genre">${genre}</div>
-            <hr class="modal-divider">
+            <h2 class="modal-anime-title" style="margin: 0 0 10px 0;">${judul}</h2>
+            <div class="modal-anime-genre" style="margin-bottom: 15px;">${genre}</div>
+            <hr style="border:0; border-top:1px solid #333; margin:25px 0;">
             <p class="modal-anime-desc">${deskripsi}</p>
-            <hr class="modal-divider"><h3 class="modal-eps-title">Daftar Episode</h3>
-            <div id="eps-list-container" style="display:flex; flex-wrap:wrap; gap:8px;">
+            <hr style="border:0; border-top:1px solid #333; margin:25px 0;">
+            <h3 class="modal-eps-title" style="margin-top: 0;">Daftar Episode</h3>
+            <div id="eps-list-container" style="display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px;">
                 ${Object.keys(epsLinks).filter(k => epsLinks[k] && epsLinks[k].trim() !== "").map(k => `<button class="eps-btn" onclick="pilihEpisode('${epsLinks[k]}', '${animeId}')">${k}</button>`).join('') || '<p>Belum ada episode.</p>'}
             </div>
             <div id="comments-wrapper" style="display:none; margin-top:20px;">
@@ -381,7 +382,7 @@ window.pilihEpisode = (url, animeId) => {
     const mediaBox = document.getElementById('mediaContainer');
     const commWrapper = document.getElementById('comments-wrapper');
     if (!mediaBox) return;
-    mediaBox.innerHTML = `<video id="playerVideo" src="${url}" controls autoplay playsinline style="width:100%; aspect-ratio:16/9; background:#000;"></video>`;
+    mediaBox.innerHTML = `<div onclick="event.stopPropagation(); window.tutupVideo();" style="position:absolute; top:10px; right:10px; z-index:9999; cursor:pointer; background:rgba(0,0,0,0.5); color:white; width:25px; height:25px; text-align:center; line-height:25px; border-radius:50%; font-size:16px; font-weight:bold;">X</div><video id="playerVideo" src="${url}" controls autoplay playsinline style="width:100%; aspect-ratio:16/9; background:#000;"></video>`;
     if(commWrapper) {
         commWrapper.style.display = 'block';
         window.renderKomentar(animeId);
@@ -416,4 +417,14 @@ window.renderKomentar = (animeId) => {
     });
 };
 
-wind
+window.tutupVideo = () => { 
+    clearInterval(intervalFarming);
+    const modal = document.getElementById('videoModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+    window.muatAnime();
+    window.muatLeaderboard();
+    window.inisialisasiPencarian();
+});
