@@ -289,14 +289,16 @@ window.renderHalamanFavorit = async function() {
             }))));
 
             return `
-                <div class="anime-item" onclick="window.bukaVideoEncoded('${dataEncode}')">
-                    <div class="poster" style="background-image: url('${data.posterUrl}');">
-                        <div class="overlay-info">
-                            <span class="views">❤️</span>
-                            <span class="eps" onclick="event.stopPropagation(); window.toggleFavorit('${data.judul}', '${data.posterUrl}', '${data.animeId}'); window.renderHalamanFavorit();" style="cursor:pointer; background:rgba(255,0,0,0.7);">Hapus</span>
+                <div class="anime-item">
+                    <div class="poster" style="background-image: url('${data.posterUrl}'); cursor:pointer; position:relative;" onclick="window.bukaVideoEncoded('${dataEncode}')">
+                        <div onclick="event.stopPropagation(); window.toggleFavorit('${data.judul}', '${data.posterUrl}', '${data.animeId}'); window.renderHalamanFavorit();" 
+                             style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.6); color:white; border-radius:50%; width:22px; height:22px; text-align:center; font-size:14px; cursor:pointer; line-height:20px; z-index:10;">X</div>
+                        <div class="overlay-info" style="pointer-events: none;">
+                            <span class="views" style="pointer-events: none;">👁️ 0</span>
+                            <span class="eps" style="pointer-events: none;">🎬 Eps</span>
                         </div>
                     </div>
-                    <p class="anime-title">${data.judul}</p>
+                    <p class="anime-title" style="cursor:pointer;" onclick="window.bukaVideoEncoded('${dataEncode}')">${data.judul}</p>
                 </div>
             `;
         }).join('');
@@ -396,4 +398,4 @@ window.addEventListener('DOMContentLoaded', () => {
     window.muatLeaderboard();
     window.inisialisasiPencarian();
 });
-        
+    
