@@ -35,40 +35,46 @@
         </div>
         <h3 class="section-title">Profil Pengguna</h3>
         <div class="profile-card-center" style="background:#11141a; padding:20px; border-radius:12px; border:1px solid #1f2833; text-align:center; margin-top:15px;">
-            <div class="avatar-large" style="width:70px; height:70px; background:#f39c12; color:#000; font-size:28px; font-weight:900; display:flex; align-items:center; justify-content:center; border-radius:50%; margin:0 auto 15px auto;">M</div>
-            <h3 style="color:#fff;">DenPutra</h3>
-            <p style="color:#f39c12; font-size:12px; font-weight:bold;">User Premium</p>
-            <div id="xpDisplay" style="background:#1f2833; padding:10px; border-radius:8px; margin-top:10px;">XP Anda: Memuat...</div>
+            <div class="avatar-large" id="avatar" style="width:70px; height:70px; background:#f39c12; color:#000; font-size:28px; font-weight:900; display:flex; align-items:center; justify-content:center; border-radius:50%; margin:0 auto 15px auto;">M</div>
+            
+            <div style="display: flex; justify-content: center; align-items: center; gap: 8px;">
+                <h3 id="userName" style="color:#fff; margin:0;">Memuat...</h3>
+                <img id="verifIcon" src="" style="display:none; width:18px; height:18px; vertical-align:middle;">
+            </div>
+            
+            <p id="userRole" style="color:#f39c12; font-size:12px; font-weight:bold; margin-top:5px;">User</p>
+            
+            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0;">
+                <div style="background:#1f2833; padding:8px; border-radius:8px;"><div style="font-size:10px; color:#888;">Exp</div><div id="statExp" style="font-size:12px;">0</div></div>
+                <div style="background:#1f2833; padding:8px; border-radius:8px;"><div style="font-size:10px; color:#888;">Komen</div><div id="statKomen" style="font-size:12px;">0</div></div>
+                <div style="background:#1f2833; padding:8px; border-radius:8px;"><div style="font-size:10px; color:#888;">Hari</div><div id="statHari" style="font-size:12px;">0</div></div>
+                <div style="background:#1f2833; padding:8px; border-radius:8px;"><div style="font-size:10px; color:#888;">Teman</div><div id="statTeman" style="font-size:12px;">0</div></div>
+            </div>
+
+            <div id="xpContainer" style="margin: 15px 0;">
+                <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 5px;">
+                    <span id="xpDisplay">XP Anda: Memuat...</span>
+                </div>
+                <div style="background: #1f2833; height: 8px; border-radius: 4px;">
+                    <div id="xpBar" style="background: #f39c12; height: 100%; width: 0%; border-radius: 4px;"></div>
+                </div>
+            </div>
+
+            <div id="infoDetail" style="background: #1f2833; padding: 15px; border-radius: 8px; text-align: left; font-size: 13px; color: #ccc; line-height: 1.8;">
+                <div>Username: <span id="info-username">-</span></div>
+                <div>Email: <span id="info-email">-</span></div>
+                <div>Metode: <span id="info-login">-</span></div>
+                <div style="color: #f39c12; font-weight: bold;">Kode Unik: <span id="info-kode">#0000</span></div>
+            </div>
+
+            <button onclick="window.handleLogout()" style="margin-top:15px; background:transparent; border:1px solid #e74c3c; color:#e74c3c; padding:5px 20px; border-radius:5px; cursor:pointer;">Logout</button>
         </div>
     </div>
 
     <div id="videoModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="tutupVideo()">&times;</span>
-            <div id="videoInfo">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
-                        <h3 class="modal-anime-title">Nama Anime</h3>
-                        <p class="modal-anime-genre">GENRE ANIME</p>
-                    </div>
-                    <img src="https://cdn.phototourl.com/free/2026-06-22-f75bfb57-fc0f-4cd5-9aa1-fe612555a4e9.png" 
-                         id="btnFavorit" alt="Favorit" style="width: 28px; cursor: pointer; margin-top: 5px;">
-                </div>
-
-                <hr class="modal-divider">
-                <p class="modal-anime-desc">Deskripsi anime akan muncul di sini...</p>
-                <h4 class="modal-eps-title">DAFTAR EPISODE</h4>
-                <div id="eps-list-container"></div>
-
-                <div class="comments-section">
-                    <div class="comments-count">Komentar</div>
-                    <div class="comment-form">
-                        <input type="text" id="inputKomentar" class="comment-input" placeholder="Tulis komentar...">
-                        <button class="comment-submit-btn" onclick="window.kirimKomentar(animeId)">➤</button>
-                    </div>
-                    <div id="comments-list"></div>
-                </div>
-            </div>
+            <div id="videoInfo"></div>
         </div>
     </div>
 
@@ -93,4 +99,5 @@
 
     <script type="module" src="main.js"></script>
 </body>
-</html>
+    </html>
+    
