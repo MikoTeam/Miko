@@ -260,7 +260,6 @@ window.toggleFavorit = async function(judul, posterUrl, animeId) {
     }
 };
 
-// PERBAIKAN: Fungsi ini sekarang akan menampilkan data dari Firestore
 window.renderHalamanFavorit = async function() {
     const user = auth.currentUser;
     const container = document.getElementById("favorit-list");
@@ -273,20 +272,37 @@ window.renderHalamanFavorit = async function() {
 
     container.innerHTML = `<p style="text-align:center; color:#777; margin-top:20px;">Memuat favorit...</p>`;
     
-    const userSnap = await getDoc(doc(db, "users", user.uid));
-    const fav = userSnap.exists() ? (userSnap.data().favorit || []) : [];
-    
-    if (fav.length === 0) {
-        container.innerHTML = `<p style="text-align:center; color:#777; margin-top:20px;">Belum ada anime favorit.</p>`;
-        return;
+    try {
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        const fav = userSnap.exists() ? (userSnap.data().favorit || []) : [];
+        
+        if (fav.length === 0) {
+            container.innerHTML = `<p style="text-align:center; color:#777; margin-top:20px;">Belum ada anime favorit.</p>`;
+            return;
+        }
+        
+        container.innerHTML = fav.map(data => {
+            const dataEncode = btoa(unescape(encodeURIComponent(JSON.stringify({
+                judul: data.judul,
+                poster: data.posterUrl,
+                idDokumen: data.animeId
+            }))));
+
+            return `
+                <div class="anime-item" onclick="window.bukaVideoEncoded('${dataEncode}')">
+                    <div class="poster" style="background-image: url('${data.posterUrl}');">
+                        <div class="overlay-info">
+                            <span class="views">❤️</span>
+                            <span class="eps" onclick="event.stopPropagation(); window.toggleFavorit('${data.judul}', '${data.posterUrl}', '${data.animeId}'); window.renderHalamanFavorit();" style="cursor:pointer; background:rgba(255,0,0,0.7);">Hapus</span>
+                        </div>
+                    </div>
+                    <p class="anime-title">${data.judul}</p>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        console.error("Gagal memuat favorit:", e);
     }
-    
-    container.innerHTML = fav.map(data => `
-        <div class="anime-item" onclick="window.location.href='index.html?id=${data.animeId}'">
-            <div class="poster" style="background-image: url('${data.posterUrl}');"></div>
-            <p class="anime-title">${data.judul}</p>
-        </div>
-    `).join('');
 };
 
 window.bukaVideo = (judul, deskripsi, epsLinksStr, genre, posterUrl, animeId) => {
@@ -380,4 +396,4 @@ window.addEventListener('DOMContentLoaded', () => {
     window.muatLeaderboard();
     window.inisialisasiPencarian();
 });
-    
+        
