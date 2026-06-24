@@ -45,22 +45,66 @@ window.navigasiKe = function(idHalaman, elemenTombol) {
 };
 
 // ==========================================
-// 2. FUNGSI PROFIL (UPDATE XP DINAMIS)
+// 2. FUNGSI PROFIL (UPDATE XP, ROLE & VERIF)
 // ==========================================
 window.muatProfil = async function() {
     const user = auth.currentUser;
-    const xpDisplay = document.getElementById("xpDisplay");
-    if (user && xpDisplay) {
-        try {
-            const userSnap = await getDoc(doc(db, "users", user.uid));
-            if (userSnap.exists()) {
-                const data = userSnap.data();
-                xpDisplay.innerText = `XP Anda: ${(data.xp || 0).toLocaleString()} XP`;
-            }
-        } catch (e) {
-            console.error("Gagal memuat profil:", e);
-        }
+    const userNameEl = document.getElementById("userName");
+    const verifIcon = document.getElementById("verifIcon"); // Asumsi ID elemen img centang
+    const roleEl = document.getElementById("userRole");   // Asumsi ID elemen teks role
+    
+    if (!user) {
+        if(userNameEl) userNameEl.innerText = "Belum Login";
+        return;
     }
+
+    try {
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        if (userSnap.exists()) {
+            const data = userSnap.data();
+            
+            // Update Username
+            if(userNameEl) userNameEl.innerText = data.username || "User";
+            
+            // Logic Centang Dinamis
+            if(verifIcon) {
+                if(data.verif && data.verif !== "") {
+                    verifIcon.src = data.verif;
+                    verifIcon.style.display = "inline-block";
+                } else {
+                    verifIcon.style.display = "none";
+                }
+            }
+            
+            // Update Role
+            if(roleEl) roleEl.innerText = data.role || "User";
+
+            // Update Grid Statistik
+            if(document.getElementById("statExp")) document.getElementById("statExp").innerText = (data.xp || 0).toLocaleString();
+            if(document.getElementById("statKomen")) document.getElementById("statKomen").innerText = data.jumlahKomentar || 0;
+            if(document.getElementById("statHari")) document.getElementById("statHari").innerText = data.hariAktif || 0;
+            if(document.getElementById("statTeman")) document.getElementById("statTeman").innerText = data.teman || 0;
+            
+            // Update Info Akun Detail
+            const infoDetailEl = document.getElementById("infoDetail");
+            if(infoDetailEl) {
+                infoDetailEl.innerHTML = `
+                    Username: ${data.username || '-'}<br>
+                    Kode Unik: ${user.uid.substring(0, 8).toUpperCase()}<br>
+                    Email: ${user.email}<br>
+                    Status: ${data.role || 'Member'}
+                `;
+            }
+        }
+    } catch (e) {
+        console.error("Gagal memuat profil:", e);
+    }
+};
+
+window.handleLogout = () => {
+    auth.signOut().then(() => {
+        location.reload();
+    });
 };
 
 // ==========================================
@@ -253,11 +297,10 @@ window.toggleFavorit = async function(judul, posterUrl, animeId) {
     const isFavorited = favList.find(a => a.animeId === animeId);
     if (isFavorited) {
         await updateDoc(userRef, { favorit: arrayRemove(isFavorited) });
-        alert("Dihapus dari favorit");
     } else {
         await updateDoc(userRef, { favorit: arrayUnion(dataFav) });
-        alert("Berhasil disimpan ke akun!");
     }
+    window.renderHalamanFavorit();
 };
 
 window.renderHalamanFavorit = async function() {
@@ -270,8 +313,6 @@ window.renderHalamanFavorit = async function() {
         return;
     }
 
-    container.innerHTML = `<p style="text-align:center; color:#777; margin-top:20px;">Memuat favorit...</p>`;
-    
     try {
         const userSnap = await getDoc(doc(db, "users", user.uid));
         const fav = userSnap.exists() ? (userSnap.data().favorit || []) : [];
@@ -291,12 +332,8 @@ window.renderHalamanFavorit = async function() {
             return `
                 <div class="anime-item">
                     <div class="poster" style="background-image: url('${data.posterUrl}'); cursor:pointer; position:relative;" onclick="window.bukaVideoEncoded('${dataEncode}')">
-                        <div onclick="event.stopPropagation(); window.toggleFavorit('${data.judul}', '${data.posterUrl}', '${data.animeId}'); window.renderHalamanFavorit();" 
+                        <div onclick="event.stopPropagation(); window.toggleFavorit('${data.judul}', '${data.posterUrl}', '${data.animeId}');" 
                              style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.6); color:white; border-radius:50%; width:22px; height:22px; text-align:center; font-size:14px; cursor:pointer; line-height:20px; z-index:10;">X</div>
-                        <div class="overlay-info" style="pointer-events: none;">
-                            <span class="views" style="pointer-events: none;">👁️ 0</span>
-                            <span class="eps" style="pointer-events: none;">🎬 Eps</span>
-                        </div>
                     </div>
                     <p class="anime-title" style="cursor:pointer;" onclick="window.bukaVideoEncoded('${dataEncode}')">${data.judul}</p>
                 </div>
@@ -323,7 +360,6 @@ window.bukaVideo = (judul, deskripsi, epsLinksStr, genre, posterUrl, animeId) =>
                     <h2 class="modal-anime-title" style="margin:0;">${judul}</h2>
                     <div class="modal-anime-genre">${genre}</div>
                 </div>
-                <img src="https://cdn.phototourl.com/free/2026-06-22-f75bfb57-fc0f-4cd5-9aa1-fe612555a4e9.png" onclick="window.toggleFavorit('${judul}', '${posterUrl}', '${animeId}')" style="width:28px; cursor:pointer;" title="Simpan ke Favorit">
             </div>
             <hr class="modal-divider">
             <p class="modal-anime-desc">${deskripsi}</p>
@@ -398,4 +434,4 @@ window.addEventListener('DOMContentLoaded', () => {
     window.muatLeaderboard();
     window.inisialisasiPencarian();
 });
-    
+            
