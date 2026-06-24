@@ -1,57 +1,43 @@
 import { db } from "./firebase-config.js";
-import { collection, getDocs, doc, getDoc, query, orderBy, limit, addDoc, serverTimestamp, onSnapshot, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { collection, getDocs, doc, getDoc, query, orderBy, limit, addDoc, serverTimestamp, onSnapshot, updateDoc, arrayUnion, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
-// Cache data lokal agar tidak boros kuota query Firestore
 let listSemuaAnime = [];
 let hariAktif = "Senin"; 
+let intervalFarming = null;
 const auth = getAuth();
 
-// Urutan nama hari untuk komponen kalender mingguan
 const daftarNamaHari = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
 
 // ==========================================
 // 1. SISTEM NAVIGATION UTAMA (TABS)
 // ==========================================
 window.navigasiKe = function(idHalaman, elemenTombol) {
-    document.querySelectorAll('.page').forEach(halaman => {
-        halaman.style.display = 'none';
-    });
-    
+    document.querySelectorAll('.page').forEach(halaman => halaman.style.display = 'none');
     const halamanTujuan = document.getElementById(idHalaman);
-    if (halamanTujuan) {
-        halamanTujuan.style.display = 'block';
-    }
-    
-    document.querySelectorAll('.nav-btn').forEach(tombol => {
-        tombol.classList.remove('active');
-    });
-    
-    if (elemenTombol) {
-        elemenTombol.classList.add('active');
-    }
+    if (halamanTujuan) halamanTujuan.style.display = 'block';
+    document.querySelectorAll('.nav-btn').forEach(tombol => tombol.classList.remove('active'));
+    if (elemenTombol) elemenTombol.classList.add('active');
 
-    if (idHalaman === 'home') {
-        window.muatAnime();
-        window.muatLeaderboard();
-    } else if (idHalaman === 'jadwal') {
-        window.generateKalenderMingguan();
-        window.muatJadwalAnime();
-    } else if (idHalaman === 'profil') {
-        window.muatProfil();
-    } else if (idHalaman === 'page-favorit') {
-        window.renderHalamanFavorit();
-    }
+    clearInterval(intervalFarming); // Hentikan farming saat pindah menu
+
+    if (idHalaman === 'home') { window.muatAnime(); window.muatLeaderboard(); } 
+    else if (idHalaman === 'jadwal') { window.generateKalenderMingguan(); window.muatJadwalAnime(); } 
+    else if (idHalaman === 'profil') { window.muatProfil(); } 
+    else if (idHalaman === 'page-favorit') { window.renderHalamanFavorit(); }
 };
 
 // ==========================================
-// 2. FUNGSI PROFIL (UPDATE XP, ROLE & VERIF)
+// 2. FUNGSI PROFIL (UPDATE XP, ROLE, VERIF, LEVEL)
 // ==========================================
 window.muatProfil = async function() {
     const user = auth.currentUser;
     const userNameEl = document.getElementById("userName");
-    const verifIcon = document.getElementById("verifIcon"); // Asumsi ID elemen img centang
-    const roleEl = document.getElementById("userRole");   // Asumsi ID elemen teks role
+    const verifIcon = document.getElementById("verifIcon");
+    const roleEl = document.getElementById("userRole");
+    const levelEl = document.getElementById("userLevel");
+    const xpBar = document.getElementById("xpBar");
+    const xpDisplay = document.getElementById("xpDisplay");
     
     if (!user) {
         if(userNameEl) userNameEl.innerText = "Belum Login";
@@ -59,56 +45,72 @@ window.muatProfil = async function() {
     }
 
     try {
+        const allUsersSnap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "asc")));
+        let urutanPendaftar = 0;
+        allUsersSnap.forEach((doc, index) => { if (doc.id === user.uid) urutanPendaftar = index + 1; });
+
         const userSnap = await getDoc(doc(db, "users", user.uid));
         if (userSnap.exists()) {
             const data = userSnap.data();
-            
-            // Update Username
-            if(userNameEl) userNameEl.innerText = data.username || "User";
-            
-            // Logic Centang Dinamis
-            if(verifIcon) {
-                if(data.verif && data.verif !== "") {
-                    verifIcon.src = data.verif;
-                    verifIcon.style.display = "inline-block";
-                } else {
-                    verifIcon.style.display = "none";
-                }
+            const xp = data.xp || 0;
+
+            // Logika Level Bertahap: 120, 240, 480, 960... (Kelipatan 2x)
+            let level = 1;
+            let targetXP = 120;
+            while (xp >= targetXP) {
+                level++;
+                targetXP = 120 * Math.pow(2, level - 1);
             }
             
-            // Update Role
+            if(userNameEl) userNameEl.innerText = data.nama || data.username || "User";
+            if(verifIcon) {
+                verifIcon.src = data.verif || "";
+                verifIcon.style.display = data.verif ? "inline-block" : "none";
+            }
+            
             if(roleEl) roleEl.innerText = data.role || "User";
+            if(levelEl) levelEl.innerText = "Lvl " + level;
 
-            // Update Grid Statistik
-            if(document.getElementById("statExp")) document.getElementById("statExp").innerText = (data.xp || 0).toLocaleString();
+            if(document.getElementById("statExp")) document.getElementById("statExp").innerText = xp.toLocaleString();
             if(document.getElementById("statKomen")) document.getElementById("statKomen").innerText = data.jumlahKomentar || 0;
             if(document.getElementById("statHari")) document.getElementById("statHari").innerText = data.hariAktif || 0;
             if(document.getElementById("statTeman")) document.getElementById("statTeman").innerText = data.teman || 0;
             
-            // Update Info Akun Detail
+            const percent = Math.min((xp / targetXP) * 100, 100);
+            if(xpBar) xpBar.style.width = percent + "%";
+            if(xpDisplay) xpDisplay.innerText = `XP: ${xp.toLocaleString()} / ${targetXP.toLocaleString()}`;
+            
             const infoDetailEl = document.getElementById("infoDetail");
             if(infoDetailEl) {
                 infoDetailEl.innerHTML = `
-                    Username: ${data.username || '-'}<br>
-                    Kode Unik: ${user.uid.substring(0, 8).toUpperCase()}<br>
-                    Email: ${user.email}<br>
-                    Status: ${data.role || 'Member'}
+                    <div>Username: <span>${data.nama || data.username || '-'}</span></div>
+                    <div>Email: <span>${user.email || '-'}</span></div>
+                    <div>Metode: <span>${user.providerData[0]?.providerId.split('.')[0] || 'Email'}</span></div>
+                    <div style="color: #f39c12; font-weight: bold;">Kode Unik: <span>#${urutanPendaftar}</span></div>
                 `;
             }
         }
-    } catch (e) {
-        console.error("Gagal memuat profil:", e);
-    }
+    } catch (e) { console.error("Gagal memuat profil:", e); }
 };
 
-window.handleLogout = () => {
-    auth.signOut().then(() => {
-        location.reload();
-    });
+window.handleLogout = () => { auth.signOut().then(() => location.reload()); };
+
+// ==========================================
+// 3. FITUR FARMING XP (DIPANGGIL SAAT VIDEO DIPUTAR)
+// ==========================================
+window.mulaiFarmingXP = function(animeId) {
+    const user = auth.currentUser;
+    if (!user) return;
+    clearInterval(intervalFarming);
+    intervalFarming = setInterval(async () => {
+        let xpGained = Math.floor(Math.random() * 100) + 1; // 1-100 XP
+        if (Math.random() < 0.1) xpGained = 1000; // 10% peluang dapat 1000 XP
+        await updateDoc(doc(db, "users", user.uid), { xp: increment(xpGained) });
+    }, 60000); // 1 Menit
 };
 
 // ==========================================
-// 3. LOGIKA KALENDER TANGGAL DINAMIS
+// 4. GENERATE KALENDER & JADWAL (TETAP)
 // ==========================================
 window.generateKalenderMingguan = function() {
     const tabsContainer = document.getElementById("dayTabsContainer");
@@ -143,9 +145,6 @@ window.gantiHari = function(namaHari, elemen) {
     window.muatJadwalAnime();
 };
 
-// ==========================================
-// 4. AMBIL DATA JADWAL TAYANG
-// ==========================================
 window.muatJadwalAnime = async function() {
     const containerJadwal = document.getElementById("jadwal-anime-list");
     if (!containerJadwal) return;
@@ -355,19 +354,14 @@ window.bukaVideo = (judul, deskripsi, epsLinksStr, genre, posterUrl, animeId) =>
             <div id="posterPreview" style="width:100%; aspect-ratio:16/9; background:url('${posterUrl}') center/cover;"></div>
         </div>
         <div style="padding: 15px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <div style="flex:1;">
-                    <h2 class="modal-anime-title" style="margin:0;">${judul}</h2>
-                    <div class="modal-anime-genre">${genre}</div>
-                </div>
-            </div>
+            <h2 class="modal-anime-title" style="margin:0;">${judul}</h2>
+            <div class="modal-anime-genre">${genre}</div>
             <hr class="modal-divider">
             <p class="modal-anime-desc">${deskripsi}</p>
             <hr class="modal-divider"><h3 class="modal-eps-title">Daftar Episode</h3>
             <div id="eps-list-container" style="display:flex; flex-wrap:wrap; gap:8px;">
                 ${Object.keys(epsLinks).filter(k => epsLinks[k] && epsLinks[k].trim() !== "").map(k => `<button class="eps-btn" onclick="pilihEpisode('${epsLinks[k]}', '${animeId}')">${k}</button>`).join('') || '<p>Belum ada episode.</p>'}
             </div>
-            
             <div id="comments-wrapper" style="display:none; margin-top:20px;">
                 <div class="comments-section">
                     <div class="comments-count">Komentar</div>
@@ -380,7 +374,6 @@ window.bukaVideo = (judul, deskripsi, epsLinksStr, genre, posterUrl, animeId) =>
             </div>
         </div>
     `;
-    
     modal.style.display = 'block';
 };
 
@@ -388,13 +381,12 @@ window.pilihEpisode = (url, animeId) => {
     const mediaBox = document.getElementById('mediaContainer');
     const commWrapper = document.getElementById('comments-wrapper');
     if (!mediaBox) return;
-    
     mediaBox.innerHTML = `<video id="playerVideo" src="${url}" controls autoplay playsinline style="width:100%; aspect-ratio:16/9; background:#000;"></video>`;
-    
     if(commWrapper) {
         commWrapper.style.display = 'block';
         window.renderKomentar(animeId);
     }
+    window.mulaiFarmingXP(animeId);
 };
 
 window.kirimKomentar = async (animeId) => {
@@ -424,14 +416,4 @@ window.renderKomentar = (animeId) => {
     });
 };
 
-window.tutupVideo = () => { 
-    const modal = document.getElementById('videoModal');
-    if (modal) modal.style.display = 'none';
-};
-
-window.addEventListener('DOMContentLoaded', () => {
-    window.muatAnime();
-    window.muatLeaderboard();
-    window.inisialisasiPencarian();
-});
-            
+wind
