@@ -1,103 +1,328 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MikoStrem</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnimeKu</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="page" id="home">
-        <header><div class="logo-box">M</div><h1>Miko<span>Strem</span></h1></header>
-        <div class="leaderboard-card"><h3 class="leaderboard-title">LEADERBOARD XP</h3><div id="leaderboard-list"></div></div>
-        <div class="search-container"><input type="text" id="searchInput" placeholder="Cari Anime..."></div>
-        <h3 class="section-title">ANIME POPULER</h3><div class="anime-grid"></div>
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-box">A</div>
+      Anime<span class="red">Ku</span>
     </div>
+    <div class="menu-btn" onclick="toggleMenu()">☰</div>
+  </div>
 
-    <div class="page" id="jadwal" style="display:none;">
-        <h2 class="calendar-header-title">Jadwal Tayang</h2>
-        <div class="day-tabs-container" id="dayTabsContainer"></div>
-        <div id="jadwal-anime-list"></div>
-    </div>
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <a href="#" onclick="navigasiKe('home'); toggleMenu()">Home</a>
+    <a href="#" onclick="navigasiKe('genre'); toggleMenu()">Genre</a>
+    <a href="#" onclick="navigasiKe('jadwal'); toggleMenu()">Jadwal</a>
+    <a href="#" onclick="navigasiKe('urutan'); toggleMenu()">A-Z</a>
+    <a href="#" onclick="navigasiKe('profil'); toggleMenu()">Profil</a>
+  </div>
+  <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 
-    <div class="page" id="page-favorit" style="display:none;">
-        <h3 class="section-title">Anime Favorit</h3>
-        <div id="favorit-list" class="anime-grid"></div>
-    </div>
+  <!-- PAGE HOME -->
+  <div class="page" id="home">
+    <div class="leaderboard"></div>
+    <input type="text" id="searchInput" placeholder="Cari anime...">
+    <h3 class="section-title">Anime Populer</h3>
+    <div class="anime-grid" id="home-grid"></div>
+  </div>
 
-    <div class="page" id="profil" style="display:none;">
-        <div class="profile-header-container">
-            <img src="https://cdn.phototourl.com/free/2026-06-22-e9ba5001-cb39-469f-a0f1-5cc220c2024e.png" class="icon-notif" alt="Notifikasi">
-            <div class="profile-right-icons">
-                <img src="https://cdn.phototourl.com/free/2026-06-22-63514f64-8886-40d4-a097-07c7c2a8002e.png" class="icon-setting" alt="Pengaturan">
-                <img src="https://cdn.phototourl.com/free/2026-06-22-a8d87822-c571-4b63-9ead-489db5667b15.png" class="icon-chat" alt="Chat">
-            </div>
+  <!-- PAGE GENRE -->
+  <div class="page" id="genre" style="display:none;">
+    <h3 class="section-title">Filter Genre</h3>
+    <div class="genre-filter" id="genreFilter"></div>
+    <h3 class="section-title">Hasil Filter</h3>
+    <div class="anime-grid" id="genre-grid"></div>
+  </div>
+
+  <!-- PAGE JADWAL -->
+  <div class="page" id="jadwal" style="display:none;">
+    <h3 class="section-title">Jadwal Rilis</h3>
+    <div class="day-tabs" id="dayTabsContainer"></div>
+    <div id="jadwal-anime-list"></div>
+  </div>
+
+  <!-- PAGE URUTAN A-Z -->
+  <div class="page" id="urutan" style="display:none;">
+    <h3 class="section-title">Urutan A-Z</h3>
+    <div class="anime-grid" id="urutan-grid"></div>
+  </div>
+
+  <!-- PAGE FAVORIT -->
+  <div class="page" id="page-favorit" style="display:none;">
+    <h3 class="section-title">Anime Favorit</h3>
+    <div class="anime-grid" id="favorit-list"></div>
+  </div>
+
+  <!-- PAGE PROFIL V3 SULTAN -->
+  <div class="page" id="profil" style="display:none;">
+    <div class="profile-container-v2">
+      <div class="profile-menu-wrapper">
+        <button class="profile-menu-btn" onclick="toggleProfileMenu()">⋮</button>
+        <div id="profileMenuPopup" class="profile-menu-popup">
+          <div onclick="navigasiKe('page-favorit', false); toggleProfileMenu()">Favorit Saya</div>
+          <div onclick="showPopup('Fitur Riwayat Tonton segera hadir'); toggleProfileMenu()">Riwayat Tonton</div>
+          <div onclick="navigasiKe('pengaturan', false); toggleProfileMenu()">Pengaturan</div>
         </div>
-        <h3 class="section-title">Profil Pengguna</h3>
-        <div class="profile-card-center" style="background:#11141a; padding:20px; border-radius:12px; border:1px solid #1f2833; text-align:center; margin-top:15px;">
-            <div class="avatar-large" id="avatar" style="width:70px; height:70px; background:#f39c12; color:#000; font-size:28px; font-weight:900; display:flex; align-items:center; justify-content:center; border-radius:50%; margin:0 auto 15px auto;">M</div>
-            
-            <div style="display: flex; justify-content: center; align-items: center; gap: 5px;">
-                <h3 id="userName" style="color:#fff; margin:0;">Memuat...</h3>
-                <img id="verifIcon" src="" style="display:none; width:16px; height:16px; vertical-align:middle;">
-            </div>
-            
-            <div id="userRole" style="color:#f39c12; font-size:12px; font-weight:bold; margin-top:2px;">User</div>
-            <div id="userLevel" style="color:#888; font-size:11px; margin-bottom:10px;">Lvl -</div>
-            
-            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0;">
-                <div style="background:#1f2833; padding:8px; border-radius:8px;"><div style="font-size:10px; color:#888;">Exp</div><div id="statExp" style="font-size:12px;">0</div></div>
-                <div style="background:#1f2833; padding:8px; border-radius:8px;"><div style="font-size:10px; color:#888;">Komen</div><div id="statKomen" style="font-size:12px;">0</div></div>
-                <div style="background:#1f2833; padding:8px; border-radius:8px;"><div style="font-size:10px; color:#888;">Hari</div><div id="statHari" style="font-size:12px;">0</div></div>
-                <div style="background:#1f2833; padding:8px; border-radius:8px;"><div style="font-size:10px; color:#888;">Teman</div><div id="statTeman" style="font-size:12px;">0</div></div>
-            </div>
+      </div>
 
-            <div id="xpContainer" style="margin: 15px 0;">
-                <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 5px;">
-                    <span id="xpDisplay">XP Anda: Memuat...</span>
-                </div>
-                <div style="background: #1f2833; height: 8px; border-radius: 4px;">
-                    <div id="xpBar" style="background: #f39c12; height: 100%; width: 0%; border-radius: 4px;"></div>
-                </div>
-            </div>
-
-            <div id="infoDetail" style="background: #1f2833; padding: 15px; border-radius: 8px; text-align: left; font-size: 13px; color: #ccc; line-height: 1.8;">
-                <div>Username: <span id="info-username">-</span></div>
-                <div>Email: <span id="info-email">-</span></div>
-                <div>Metode: <span id="info-login">-</span></div>
-                <div style="color: #f39c12; font-weight: bold;">Kode Unik: <span id="info-kode">#0000</span></div>
-            </div>
-
-            <button onclick="window.handleLogout()" style="margin-top:15px; background:transparent; border:1px solid #e74c3c; color:#e74c3c; padding:5px 20px; border-radius:5px; cursor:pointer;">Logout</button>
+      <div class="profile-top">
+        <div class="avatar-wrap">
+          <img id="userAvatar" src="https://via.placeholder.com/70/222/666?text=User" alt="Avatar">
+          <img id="verifIcon" class="profile-verif-v2" src="" alt="Verified">
         </div>
-    </div>
+        <h2 id="userName">Belum Login</h2>
+        <p id="userRole">User</p>
+        <p id="userLevel">Lvl 1</p>
+      </div>
 
-    <div id="videoModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="tutupVideo()">&times;</span>
-            <div id="videoInfo"></div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <span class="stat-label">Exp</span>
+          <span class="stat-value" id="statExp">0</span>
         </div>
+        <div class="stat-box">
+          <span class="stat-label">Komentar</span>
+          <span class="stat-value" id="statKomen">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Hari</span>
+          <span class="stat-value" id="statHari">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Teman</span>
+          <span class="stat-value" id="statTeman">0</span>
+        </div>
+      </div>
+
+      <div class="exp-section">
+        <span>Exp</span>
+        <div class="exp-bar-bg">
+          <div class="xp-bar-fill" id="xpBar"></div>
+        </div>
+        <span id="xpMax">120</span>
+      </div>
+
+      <div class="game-waktu">
+        <div><span>Game</span><b id="statGame">0</b></div>
+        <div><span>Waktu</span><b id="statWaktu">0</b></div>
+      </div>
+
+      <h3 class="section-title">Info Akun</h3>
+      <div class="info-akun">
+        <div><b>Username</b><span id="userNameInfo">-</span></div>
+        <div><b>Kode Unik</b><span id="userKode">-</span></div>
+        <div><b>Email</b><span id="userEmail">-</span></div>
+        <div><b>Login</b><span id="loginMetode">-</span></div>
+      </div>
+
+      <!-- FIX: ID btn-login-text biar JS bisa ganti teksnya -->
+      <button class="btn-login" id="btn-logout" onclick="showPopupLogin()">
+        <span id="btn-login-text">Login dengan Google</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- PAGE PENGATURAN -->
+  <div class="page" id="pengaturan" style="display:none;">
+    <h3 class="section-title">Pengaturan</h3>
+
+    <div class="settings-group">
+      <div class="settings-group-title">Akun</div>
+      <div class="menu-item" onclick="gantiNama()">
+        <span>Ganti Nama</span>
+        <span id="namaSekarang">Belum Login</span>
+      </div>
+      <div class="menu-item" onclick="gantiPP()">
+        <span>Ganti Foto Profil</span>
+        <span>Ubah</span>
+      </div>
+      <input type="file" id="inputPP" accept="image/*" style="display:none" onchange="uploadPP(event)">
     </div>
 
-    <div class="bottom-nav">
-        <button class="nav-btn active" onclick="navigasiKe('home', this)">
-            <img src="https://cdn.phototourl.com/free/2026-06-22-807000d1-0ae1-427c-bd51-d50015842c0f.png" alt="Home">
-            <span>Home</span>
-        </button>
-        <button class="nav-btn" onclick="navigasiKe('jadwal', this)">
-            <img src="https://cdn.phototourl.com/free/2026-06-22-03b1b6e0-7195-494a-98fe-1e7e99394082.png" alt="Jadwal">
-            <span>Jadwal</span>
-        </button>
-        <button class="nav-btn" onclick="navigasiKe('page-favorit', this)">
-            <img src="https://cdn.phototourl.com/free/2026-06-22-f75bfb57-fc0f-4cd5-9aa1-fe612555a4e9.png" alt="Favorite">
-            <span>Favorite</span>
-        </button>
-        <button class="nav-btn" onclick="navigasiKe('profil', this)">
-            <img src="https://cdn.phototourl.com/free/2026-06-22-46de19e4-973b-48dd-9372-5c6c0dafa2da.png" alt="Profile">
-            <span>Profile</span>
-        </button>
+    <div class="settings-group">
+      <div class="settings-group-title">Pemutaran</div>
+      <div class="menu-item">
+        <span>Mode Gelap</span>
+        <label class="switch">
+          <input type="checkbox" id="toggleDark" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="menu-item">
+        <span>Auto Play Episode</span>
+        <label class="switch">
+          <input type="checkbox" id="toggleAutoPlay">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="menu-item">
+        <span>Skip Intro Otomatis</span>
+        <label class="switch">
+          <input type="checkbox" id="toggleSkipIntro" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="menu-item" onclick="pilihKualitas()">
+        <span>Kualitas Default</span>
+        <span id="kualitasText">1080p</span>
+      </div>
+      <div class="menu-item" onclick="pilihBahasa()">
+        <span>Bahasa Subtitle</span>
+        <span id="bahasaText">Indonesia</span>
+      </div>
     </div>
 
-    <script type="module" src="main.js"></script>
+    <div class="settings-group">
+      <div class="settings-group-title">Notifikasi & Data</div>
+      <div class="menu-item">
+        <span>Notifikasi Episode Baru</span>
+        <label class="switch">
+          <input type="checkbox" id="toggleNotif" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="menu-item" onclick="unduhanOffline()">
+        <span>Unduhan Offline</span>
+        <span>Kelola</span>
+      </div>
+      <div class="menu-item" onclick="hapusCache()">
+        <span>Hapus Cache</span>
+        <span id="cacheSize">0 MB</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <div class="settings-group-title">Info & Support</div>
+      <div class="menu-item" onclick="tentangAplikasi()">
+        <span>Tentang Aplikasi</span>
+        <span>Versi</span>
+      </div>
+      <div class="menu-item" onclick="bantuanSupport()">
+        <span>Bantuan & Support</span>
+        <span>Hubungi</span>
+      </div>
+      <div class="menu-item" onclick="logout()">
+        <span class="text-danger">Keluar Akun</span>
+        <span>Logout</span>
+      </div>
+    </div>
+
+    <p class="footer-text">AnimeKu v1.0.0<br>Di Buat Oleh Miko☕</p>
+  </div>
+
+  <!-- MODAL DETAIL ANIME BANNER -->
+  <div id="modalDetail" class="modal" onclick="tutupDetail()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="detail-banner">
+        <img id="detail-banner-img" src="" alt="">
+        <div class="banner-gradient"></div>
+        <button class="back-btn" onclick="tutupDetail()">←</button>
+
+        <div class="banner-info">
+          <div class="badge-jadwal" id="detail-jadwal">Jadwal Rilis</div>
+          <h1 id="detail-judul"></h1>
+          <p id="detail-judul-eng"></p>
+
+          <div class="detail-tags">
+            <span class="tag-rating">⭐ <b id="detail-rating"></b></span>
+            <span class="tag-studio" id="detail-studio"></span>
+            <span class="tag-tanggal" id="detail-tanggal"></span>
+            <span class="tag-tipe" id="detail-tipe"></span>
+          </div>
+
+          <div class="detail-views">Views <b id="detail-views"></b></div>
+
+          <div class="detail-buttons">
+            <button class="btn-tonton" onclick="nontonEps()">Tonton Sekarang</button>
+            <button class="btn-follow" onclick="toggleFollow()">Ikuti</button>
+          </div>
+          <p class="follow-count"><span id="detail-follow">0</span> pengikut</p>
+        </div>
+      </div>
+
+      <div class="detail-body">
+        <div class="detail-sinopsis">
+          <h3>Sinopsis</h3>
+          <p id="detail-deskripsi"></p>
+        </div>
+
+        <div class="detail-eps-list">
+          <h3>Daftar Episode</h3>
+          <div id="list-eps"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POPUP PILIHAN GLOBAL BUAT SPEED + KUALITAS -->
+  <div id="popupPilihan" class="popup-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:10001;align-items:center;justify-content:center">
+    <div class="popup-box" style="background:#181818;border:1px solid #333;border-radius:12px;padding:18px;width:85%;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.6)">
+      <p id="popupPilihanText" style="color:#fff;font-size:16px;font-weight:600;margin:0 0 12px;text-align:center">Kecepatan Putar</p>
+      <div id="popupPilihanList" style="display:flex;flex-direction:column;gap:8px;margin:15px 0"></div>
+      <button onclick="hidePopupPilihan()" style="padding:12px;border:none;border-radius:8px;background:#2a2a2a;color:#fff;font-size:15px;cursor:pointer;width:100%;border:1px solid #444;font-weight:500">Batal</button>
+    </div>
+  </div>
+
+  <!-- POPUP PEMBERITAHUAN GLOBAL -->
+  <div id="popupNotifikasi" class="popup-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:10000;align-items:center;justify-content:center">
+    <div class="popup-box" style="background:#181818;border:1px solid #333;border-radius:12px;padding:20px;width:85%;max-width:300px;text-align:center">
+      <p id="popupText" style="color:#fff;font-size:15px;margin:0 0 15px">Pesan</p>
+      <button onclick="hidePopup()" style="padding:12px;border:none;border-radius:8px;background:#e50914;color:#fff;font-size:15px;cursor:pointer;width:100%;font-weight:600">Oke</button>
+    </div>
+  </div>
+
+  <!-- POPUP LOGIN 2 METODE: GOOGLE + EMAIL -->
+  <div id="popupLogin" class="popup-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:10002;align-items:center;justify-content:center">
+    <div class="popup-box" style="background:#181818;border:1px solid #333;border-radius:16px;padding:24px;width:90%;max-width:340px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.7);position:relative">
+
+      <div style="width:60px;height:60px;background:#e50914;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:#fff">A</div>
+
+      <h2 style="color:#fff;font-size:20px;font-weight:700;margin:0 0 16px">Masuk ke AnimeKu</h2>
+
+      <!-- TAB SWITCH -->
+      <div style="display:flex;background:#0a0a0a;border-radius:8px;padding:4px;margin-bottom:20px">
+        <div id="tabGoogle" onclick="switchTab('google')" style="flex:1;padding:8px;border-radius:6px;background:#e50914;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Google</div>
+        <div id="tabEmail" onclick="switchTab('email')" style="flex:1;padding:8px;border-radius:6px;color:#999;font-size:13px;font-weight:600;cursor:pointer">Email</div>
+      </div>
+
+      <!-- FORM GOOGLE -->
+      <div id="formGoogle">
+        <button onclick="loginGoogle()" style="width:100%;padding:14px;border:none;border-radius:10px;background:#fff;color:#000;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px">
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Lanjut dengan Google
+        </button>
+      </div>
+
+      <!-- FORM EMAIL -->
+      <div id="formEmail" style="display:none">
+        <input type="email" id="inputEmail" placeholder="Email lu" style="width:100%;padding:12px 14px;margin-bottom:10px;border-radius:8px;border:1px solid #333;background:#0a0a0a;color:#fff;font-size:14px;outline:none;box-sizing:border-box">
+        <input type="password" id="inputPass" placeholder="Password min 6 karakter" style="width:100%;padding:12px 14px;margin-bottom:16px;border-radius:8px;border:1px solid #333;background:#0a0a0a;color:#fff;font-size:14px;outline:none;box-sizing:border-box">
+
+        <button onclick="loginEmail()" style="width:100%;padding:14px;border:none;border-radius:10px;background:#e50914;color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:10px">Masuk</button>
+
+        <!-- FIX: onclick ganti ke switchKeDaftar, bukan registerEmail langsung -->
+        <p style="color:#666;font-size:12px;margin:0">Belum punya akun? <span onclick="switchKeDaftar()" style="color:#e50914;cursor:pointer;font-weight:600">Daftar disini</span></p>
+      </div>
+
+      <p style="color:#666;font-size:11px;margin:16px 0 0">Dengan masuk, lu setuju sama Syarat & Kebijakan Privasi AnimeKu Denngan resiko login imel gabisa ganti pw</p>
+
+      <button onclick="hidePopupLogin()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#666;font-size:28px;cursor:pointer;padding:0;line-height:1">×</button>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
 </body>
-</html>
+            </html>
